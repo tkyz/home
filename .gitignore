@@ -2,7 +2,7 @@
 *
 !**/
 !/.dotfiles/**
-!/bin/*.py
+!/bin/**
 !/etc/**
 !/sbin/**
 !/src/**

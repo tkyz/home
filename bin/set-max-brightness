@@ -1,0 +1,11 @@
+#!/bin/bash -eu
+
+reload
+
+# TODO: 原因不明で暗くなるので、その対応
+
+find /sys/class/backlight/ -mindepth 1 -maxdepth 1 -type l | while read line; do
+  sudo cat "${line}/max_brightness" | sudo tee "${line}/brightness"
+done
+
+sudo shutdown now

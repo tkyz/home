@@ -1,0 +1,114 @@
+#!/bin/bash -eu
+
+reload
+
+k8s_yml="$(yq -r .home.k8s "${home_yml}")"
+len="$(echo "${k8s_yml}" | yq -r length)"
+
+for ((i = 0; i < "${len}"; i++)); do
+
+  ns="$(    echo "${k8s_yml}" | yq -r ".[${i}].ns     | select(. != null)")"
+  name="$(  echo "${k8s_yml}" | yq -r ".[${i}].name   | select(. != null)")"
+  build="$( echo "${k8s_yml}" | yq -r ".[${i}].build  | select(. != null)")"
+  domain="$(echo "${k8s_yml}" | yq -r ".[${i}].domain | select(. != null)")"
+  port="$(  echo "${k8s_yml}" | yq -r ".[${i}].port   | select(. != null)")"
+  url="$(   echo "${k8s_yml}" | yq -r ".[${i}].url    | select(. != null)")"
+
+  sudo kubectl create ns "${ns}" || true
+
+  # TODO: イメージがローカルになければビルド
+  # TODO: イメージ名
+  if false && [[ 'true' == "${build}" ]]; then
+    pushd "${home_dir}/src/docker/${xxx}/"
+      build --no-cache --pull
+    popd
+  fi
+
+  # config-map
+# config_map_dir="${home_dir}/k8s/configmap/${ns}/${name}"
+# if [[ -d "${config_map_dir}" ]]; then
+#   sudo kubectl create configmap -n "${ns}" "${name}" --from-file="${config_map_dir}"
+# fi
+
+  # manifest
+  # TODO: 例外実装。定義化するか共通化する。
+  if [[ -n "${url}" && 'ingress-nginx' == "${ns}" ]]; then
+
+    curl "${url}" | \
+      sed -E \
+        -e 's#^([ ]+type: )NodePort$#\1LoadBalancer#g' \
+        -e 's#^([ ]+)(targetPort: http)$#\1nodePort: 80#g' \
+        -e 's#^([ ]+)(targetPort: https)$#\1nodePort: 443#g' \
+        -e 's#^([ ]+)(- /nginx-ingress-controller)$#\1\2\n\1- --enable-ssl-passthrough#g' | \
+      sudo kubectl apply -n "${ns}" -f /dev/stdin
+
+  elif [[ -n "${url}" ]]; then
+    curl "${url}" | sudo kubectl apply -n "${ns}" -f /dev/stdin
+
+  elif [[ -f "${home_dir}/src/k8s/manifest/${ns}/${name}.yml" ]]; then
+    cat "${home_dir}/src/k8s/manifest/${ns}/${name}.yml" | envsubst | sudo kubectl apply -n "${ns}" -f /dev/stdin || true
+  fi
+
+  certs_key="${secrets_dir}/pki/certs/${domain}/key"
+  certs_csr="${secrets_dir}/pki/certs/${domain}/csr"
+  certs_san="${secrets_dir}/pki/certs/${domain}/san"
+  certs_crt="${secrets_dir}/pki/certs/${domain}/crt"
+  if [[ -n "${domain}" && -n "${port}" && ! -f "${certs_key}" ]] && is_root; then
+
+    echo "subjectAltName = DNS:${host}" | tee "${certs_san}"
+
+    openssl genrsa -rand /dev/urandom -out "${certs_key}" 4096
+    openssl req -new -key "${certs_key}" -out "${certs_csr}" -subj "/CN=${domain}"
+
+    # TODO: とりあえず発行情報は管理しない
+    tmp_dir="$(mktemp -d)"
+    mkdir -p     "${tmp_dir}/demoCA/newcerts/"
+    touch        "${tmp_dir}/demoCA/index.txt"
+    echo -n 01 > "${tmp_dir}/demoCA/serial"
+    pushd "${tmp_dir}"
+      yes | openssl ca -policy policy_anything -days 365 -cert "${node_crt}" -keyfile "${node_key}" -in "${certs_csr}" -out "${certs_crt}" -extfile "${certs_san}"
+    popd
+
+    secret_name="${name}-tls"
+
+    # TODO: 例外実装。定義化するか共通化する。
+    if [[ 'kubernetes-dashboard' == "${name}" ]]; then
+      secret_name='kubernetes-dashboard-certs'
+    fi
+
+    # secrets
+    sudo kubectl create secret -n "${ns}" tls "${secret_name}" --key "${certs_key}" --cert "${certs_crt}" || true
+
+    # ingress
+    sudo kubectl apply -n "${ns}" -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${name}
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+    - hosts:
+      - ${domain}
+      secretName: ${secret_name}
+  rules:
+    - host: ${domain}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ${name}
+                port:
+                  number: ${port}
+EOF
+
+  fi
+
+done

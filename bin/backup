@@ -1,0 +1,31 @@
+#!/bin/bash -eu
+
+reload
+
+mnt backup
+
+backup_yml="$(yq -r '.home.backup' "${home_yml}")"
+
+password="$(echo "${backup_yml}" | yq -r '.password | select(. != null)')"
+#password="$(node_hash)"
+
+# TODO: home.ymlに定義化
+if false; then
+  echo "${backup_yml}" | yq -r '.source[] | .' | while read item; do
+
+    item="$(eval echo "${item}")"
+
+#   tar -zc -C "${HOME}" '.secrets' | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${aes_pass}" -out "${target_file}"
+
+  done
+else
+  target_file="${home_dir}/mnt/backup/${USER:-root}@$(hostname -f)/$(timestamp).tgz.aes256"
+  tar -zc -C "${HOME}" '.secrets' | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${password}" -out "${target_file}"
+fi
+
+cat <<EOF
+decrypt.
+> openssl enc -d -aes-256-cbc -salt -md sha512 -pbkdf2 -k '' -in "${target_file}" | tar -zx -C "\$(mktemp -d)"
+EOF
+
+umnt backup

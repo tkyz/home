@@ -1,0 +1,54 @@
+#!/bin/bash -eu
+
+reload
+
+if [[ 1 == "${#}" ]]; then
+
+  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${home_yml}")"
+
+  def_name="$(echo "${mnt_item_yml}" | yq -r .name)"
+  def_type="$(echo "${mnt_item_yml}" | yq -r .type)"
+  def_host="$(echo "${mnt_item_yml}" | yq -r .host)"
+  def_path="$(echo "${mnt_item_yml}" | yq -r .path)"
+
+  mnt_target="${home_dir}/mnt/${def_name}"
+  if ! mountpoint --quiet "${mnt_target}"; then
+
+    mkdir -p "${mnt_target}"
+
+    if [[ 'cifs' == "${def_type}" ]]; then
+
+      def_username="$(echo "${mnt_item_yml}" | yq -r '.username  | select(. != null)')"
+      def_password="$(echo "${mnt_item_yml}" | yq -r '.password  | select(. != null)')"
+      def_opts="$(    echo "${mnt_item_yml}" | yq -r '.opts      | select(. != null)')"
+      def_fstab="$(   echo "${mnt_item_yml}" | yq -r '.fstab     | select(. != null)')"
+
+      credentials="$(mktemp)"
+      echo "username=${def_username}" >> "${credentials}"
+      echo "password=${def_password}" >> "${credentials}"
+
+      mnt_source="//${def_host}${def_path}"
+      mnt_opts="$(eval echo ${def_opts})"
+      mnt_opts+=",credentials=${credentials}"
+      if ! echo "${mnt_opts}" | grep -q file_mode= 2> /dev/null; then mnt_opts+=',file_mode=0644'; fi
+      if ! echo "${mnt_opts}" | grep -q dir_mode=  2> /dev/null; then mnt_opts+=',dir_mode=0755';  fi
+      if ! echo "${mnt_opts}" | grep -q uid=       2> /dev/null; then mnt_opts+=",uid=$(id -u)";   fi
+      if ! echo "${mnt_opts}" | grep -q gid=       2> /dev/null; then mnt_opts+=",gid=$(id -g)";   fi
+
+#     if [[ 'true' == "${def_fstab}" ]]; then
+#       echo "${mnt_source} ${mnt_target} ${def_type} ${mnt_opts} 0 0" | sudo tee --append /etc/fstab
+#     fi
+      sudo mount --types "${def_type}" --options "${mnt_opts}" "${mnt_source}" "${mnt_target}"
+
+    elif [[ 'sshfs' == "${def_type}" ]]; then
+
+      user="${USER:-root}"
+      mnt_source="${user}@${def_host}:${def_path}"
+
+      sshfs "${mnt_source}" "${mnt_target}"
+
+    fi
+
+  fi
+
+fi

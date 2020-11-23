@@ -7,10 +7,9 @@ reload
 
 umask 0077
 
-# キー
+# RSAキーペア
 if true; then
 
-  # RSAキーペア
   if [[ ! -f "${node_key}" ]]; then
     mkdir -p "${node_key%/*}"
     openssl genrsa -rand /dev/urandom -out "${node_key}" 4096
@@ -19,20 +18,18 @@ if true; then
 # openssl rsa -in "${node_key}"         -out "${node_key}.der" -outform der 2> /dev/null
 # openssl rsa -in "${node_key}" -pubout -out "${node_pub}.der" -outform der 2> /dev/null
 
-  # 自己証明書
-  if [[ ! -f "${node_crt}" ]]; then
+fi
 
-    cn='tkyz-node-ca' # ${node_hash}"
-    if is_root; then
-      cn='tkyz-root-ca'
-    fi
+# 自己証明書
+if [[ ! -f "${node_crt}" ]]; then
 
-    openssl req -new -key "${node_key}" -out "${node_csr}" -subj "/CN=${cn}"
-    openssl x509 -days 3650 -req -in "${node_csr}" -signkey "${node_key}" -out "${node_crt}"
-
-    unset cn
-
+  cn='tkyz-node-ca' # ${node_hash}"
+  if is_root; then
+    cn='tkyz-root-ca'
   fi
+
+  openssl req -new -key "${node_key}" -out "${node_csr}" -subj "/CN=${cn}"
+  openssl x509 -days 3650 -req -in "${node_csr}" -signkey "${node_key}" -out "${node_crt}"
 
 fi
 
@@ -43,45 +40,37 @@ if false; then
   chmod 644 "${root_pub}" "${root_crt}"
 fi
 
-# ssh
+mkdir -p "${HOME}/.ssh/"
+
+# ssh-config
 if true; then
 
-  mkdir -p "${HOME}/.ssh/"
+  line="Include ${home_dir}/etc/ssh/config"
+  file="${HOME}/.ssh/config"
 
-  # ssh-config
-  if true; then
-
-    line="Include ${home_dir}/etc/ssh/config"
-    file="${HOME}/.ssh/config"
-
-    # TODO: function化
-    if [[ ! -f "${file}" ]] || ! cat "${file}" | grep -q "${line}"; then
-      echo "${line}" | tee -a "${file}"
-    fi
-
-    unset line
-    unset file
-
+  # TODO: function化
+  if [[ ! -f "${file}" ]] || ! cat "${file}" | grep -q "${line}"; then
+    echo "${line}" | tee -a "${file}"
   fi
 
-  # authorized_keys
-  if true; then
+fi
 
-    org_file="${HOME:-/root}/.ssh/authorized_keys"
-    tmp_file="$(mktemp)"
+# authorized_keys
+if true; then
 
-    cp "${org_file}" "${tmp_file}"
+  org_file="${HOME:-/root}/.ssh/authorized_keys"
+  tmp_file="$(mktemp)"
 
-    # 自己作成鍵
-    echo "$(cat "${node_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) node-pub ${USER:-root}@$(hostname -f)" >> "${tmp_file}"
+  cp "${org_file}" "${tmp_file}"
 
-    # 外部提供鍵
-    echo "$(cat "${root_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) root-pub" >> "${tmp_file}"
-    curl https://github.com/tkyz.keys | sed 's/$/ tkyz@github.com/g' >> "${tmp_file}" || true
+  # secure
+  echo "$(cat "${node_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) node-pub ${USER:-root}@$(hostname -f)" >> "${tmp_file}"
 
-    sort "${tmp_file}" | uniq > "${org_file}"
+  # insecure
+  echo "$(cat "${root_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) root-pub" >> "${tmp_file}"
+  curl https://github.com/tkyz.keys | sed 's/$/ tkyz@github.com/g' >> "${tmp_file}" || true
 
-  fi
+  sort "${tmp_file}" | uniq > "${org_file}"
 
   # TODO: 重複登録される
   if false; then
@@ -535,7 +524,7 @@ if [[ 'runtime' == "${type}" ]]; then
   fi
 
   # k8s worker
-  if is_sudoer && ! is_root && [[ ! -f '/etc/kubernetes/kubelet.conf' ]] && ping -c 1 -q source.tkyz.jp > /dev/null 2>&1; then
+  if is_sudoer && ! is_root && [[ ! -f '/etc/kubernetes/kubelet.conf' ]] && ping -c 1 -q join.tkyz.jp > /dev/null 2>&1; then
 
     sudo kubeadm reset -f
 
@@ -623,7 +612,7 @@ if [[ 'develop' == "${type}" ]]; then
   if is_sudoer; then
     sudo ln -fs "${output_dir}/bin/java" '/usr/local/bin/java8'
   else
-    ln -fs "${output_dir}/bin/java" "${home_dir}/bin/java8"
+    ln -fs "${output_dir}/bin/java" "${home_dir}/local/bin/java8"
   fi
 
   # apache-drill
@@ -654,7 +643,7 @@ if [[ 'develop' == "${type}" ]]; then
   ln -fs "../../../etc/apache-drill/conf/storage-plugins-override.conf" "${output_dir}/conf/storage-plugins-override.conf"
 
   # embulk
-  output_file="${home_dir}/bin/embulk"
+  output_file="${home_dir}/local/bin/embulk"
   if [[ ! -f "${output_file}" ]]; then
 
     curl 'https://dl.embulk.org/embulk-latest.jar' -o "${output_file}"
@@ -698,7 +687,7 @@ if [[ 'develop' == "${type}" ]]; then
   # docker-compose
   if is_cmd docker; then
 
-    output_file="${home_dir}/bin/docker-compose"
+    output_file="${home_dir}/local/bin/docker-compose"
     if [[ ! -f "${output_file}" ]]; then
 
       # https://docs.docker.com/compose/install/
@@ -709,8 +698,6 @@ if [[ 'develop' == "${type}" ]]; then
     fi
     if is_sudoer; then
       sudo ln -fs "${output_file}" '/usr/local/bin/docker-compose'
-    else
-      ln -fs "${output_file}" "${home_dir}/bin/docker-compose"
     fi
 
   fi

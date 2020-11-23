@@ -1,0 +1,15 @@
+#!/bin/bash -eu
+
+reload
+
+sudo arp-scan -l -x 2> /dev/null | while read line; do
+
+  ip="$( echo "${line}" | awk -F ' ' '{print $1}')"
+  mac="$(echo "${line}" | awk -F ' ' '{print $2}')"
+
+  hostname="$(host "${ip}" | sed -r 's/.* domain name pointer ([^\.]+)\.lan\.$/\1/g' | grep -v 'not found')"
+  hostname="${hostname:-unknown}"
+
+  nmap ${ip} | grep -E -v '^[^0-9]+' 2> /dev/null | sed -E -e '/^$/d' -e "s/^/${mac} ${ip} ${hostname} /g" -e 's|[ /]+| |g'
+
+done

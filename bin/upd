@@ -1,0 +1,47 @@
+#!/bin/bash -eu
+
+reload
+
+if is_sudoer; then
+
+  # パッケージマネージャーのプロキシ
+  if is_debian; then
+
+    output_file='/etc/apt/apt.conf.d/00proxy'
+
+    # TODO: ProxyAutoDetect
+    if is_tcp debian.repos.tkyz.jp 3142; then
+      sudo ln -fs "${home_dir}/etc/apt.conf.d/00proxy" "${output_file}"
+    else
+      sudo rm -rf "${output_file}"
+    fi
+
+  fi
+
+  # パッケージ更新
+  if is_debian; then sudo apt update; sudo apt upgrade -y; sudo apt autoremove -y; sudo apt clean; fi
+  if is_alpine; then sudo apk update; sudo apk upgrade; fi
+
+  # ウイルス定義
+  if is_cmd freshclam; then
+    sstop  clamav-freshclam
+    sudo freshclam
+    sstart clamav-freshclam
+  fi
+
+  # ルートキット
+  if is_cmd rkhunter; then
+    sudo rkhunter --update
+    sudo rkhunter --propupd
+  fi
+
+fi
+
+# home.git
+if is_cmd git; then
+
+  git -C "${home_dir}" pull --all --prune
+
+  reload
+
+fi

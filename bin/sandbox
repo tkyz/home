@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+
+reload
+
+workdir='/sandbox'
+
+docker run \
+  --interactive \
+  --tty \
+  --rm \
+  --name 'sandbox' \
+  --hostname 'sandbox' \
+  --volume "${home_dir}/.dotfiles/":'/root/home/.dotfiles/':ro \
+  --volume "${home_dir}/bin/":'/root/home/bin/':ro \
+  --volume "${home_dir}/lib/":'/root/home/lib/':ro \
+  --volume "${home_dir}/sbin/":'/root/home/sbin/':ro \
+  --volume "${home_dir}/src/":'/root/home/src/':ro \
+  --volume "${PWD}":"${workdir}":ro \
+  --workdir "${workdir}" \
+  docker.repos.tkyz.jp/builder:debian "$@"
+
+# --volume "${home_dir}/local/bin/":'/root/home/local/bin/':ro \
+# --volume "${home_dir}/local/lib/":'/root/home/local/lib/':ro \
+# --volume "${home_dir}/local/sbin/":'/root/home/local/sbin/':ro \
+# --volume "${home_dir}/local/src/":'/root/home/local/src/':ro \
+# --volume "${home_dir}/var/log/":'/root/home/var/log/' \
+# --volume "${home_dir}/var/log/":'/var/log/' \
+# --volume "${home_dir}/var/sandbox/":'/root/home/mnt/volumes/' \
+# --volume "${home_dir}/var/sandbox/":'/mnt/volumes/' \

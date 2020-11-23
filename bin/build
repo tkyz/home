@@ -1,0 +1,105 @@
+#!/bin/bash -eu
+
+reload
+
+#----------------------------------------------------------------
+# カスタムビルド
+if [[ -f build.sh ]]; then
+  ./build.sh "$@"
+
+#----------------------------------------------------------------
+# Dockerマルチステージビルド
+elif [[ -f Dockerfile ]]; then
+
+  # 配下のディレクトリはタグとして扱う
+  find . -maxdepth 1 -mindepth 1 -type d -print0 2> /dev/null | sort -z | while IFS= read -r -d $'' docker_tag; do
+
+    current_name="${PWD##*/}"
+    docker_tag="${docker_tag##./}"
+    docker_img="docker.repos.tkyz.jp/${current_name}:${docker_tag}"
+
+#   echo "docker build. [image=${docker_img}]"
+
+    tar zch . | docker build \
+      --build-arg DOCKER_TAG="${docker_tag}" \
+      --tag="${docker_img}" \
+       "$@" -
+
+    if ping -c 1 -q docker.repos.tkyz.jp > /dev/null 2>&1; then
+      docker push "${docker_img}"
+    fi
+
+  done
+
+  # リンク先を元にlatestタグを作成
+  if [[ -L latest && -d latest ]]; then
+
+    source_img="docker.repos.tkyz.jp/${current_name}:$(readlink latest)"
+    target_img="docker.repos.tkyz.jp/${current_name}:latest"
+
+    docker tag "${source_img}" "${target_img}"
+
+    if ping -c 1 -q docker.repos.tkyz.jp > /dev/null 2>&1; then
+      docker push "${target_img}"
+    fi
+
+  fi
+
+#----------------------------------------------------------------
+# java
+elif [[ -f pom.xml ]]; then
+
+  if is_docker; then
+
+    opts=()
+    opts+=('--threads 1C')
+    opts+=('compile')
+    opts+=('package')
+    opts+=('dependency:copy-dependencies')
+    opts+=('install')
+#   opts+=('deploy')
+
+    mvn ${opts[@]}
+
+  else
+
+    workdir='/workdir'
+
+    docker run \
+      --interactive \
+      --tty \
+      --rm \
+      --volume "${home_dir}/sbin/":'/root/home/sbin/':ro \
+      --volume "${home_dir}/var/cache/org.apache.maven/":'/root/home/var/cache/org.apache.maven/' \
+      --volume "${PWD}":"${workdir}" \
+      --workdir "${workdir}" \
+      docker.repos.tkyz.jp/builder:alpine build
+
+#     --volume "${secrets_dir}/maven-settings-security.xml":'/root/home/.dotfiles/.m2/settings-security.xml':ro \
+
+  fi
+
+#----------------------------------------------------------------
+elif [[ -f package.json ]]; then
+
+  if is_docker; then
+
+    npm install
+    npm run build
+
+  else
+
+    workdir='/workdir'
+
+    docker run \
+      --interactive \
+      --tty \
+      --rm \
+      --volume "${home_dir}/sbin/":'/root/home/sbin/':ro \
+      --volume "${PWD}":"${workdir}" \
+      --workdir "${workdir}" \
+      docker.repos.tkyz.jp/builder:alpine build
+
+  fi
+
+fi
