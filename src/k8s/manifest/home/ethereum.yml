@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ethereum
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ethereum
+  template:
+    metadata:
+      labels:
+        app: ethereum
+    spec:
+      volumes:
+        - name: data
+          hostPath:
+            path: ${HOME}/home/var/blockchains/ethereum/
+            type: DirectoryOrCreate
+      containers:
+        - name: ethereum
+          image: docker.repos.tkyz.jp/ethereum:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 30303
+          volumeMounts:
+            - name: data
+              mountPath: /root/.ethereum/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ethereum
+spec:
+  type: LoadBalancer
+  selector:
+    app: ethereum
+  ports:
+    - port: 30303
+      nodePort: 30303

@@ -1,0 +1,4 @@
+# .xsessionrcで[[が効かない
+if [[ -f "${HOME}/.profile" ]] || [ -f "${HOME}/.profile" ]; then
+  . "${HOME}/.profile"
+fi

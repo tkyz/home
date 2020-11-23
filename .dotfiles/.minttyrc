@@ -1,0 +1,15 @@
+BoldAsFont=yes
+Transparency=high
+Font=ＭＳ ゴシック
+Locale=C
+Charset=UTF-8
+Columns=174
+Rows=48
+Term=xterm-256color
+IMECursorColour=255,0,0
+OpaqueWhenFocused=no
+CursorType=block
+CursorBlinks=yes
+AllowBlinking=yes
+FontHeight=9
+Language=ja

@@ -1,0 +1,54 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs
+  template:
+    metadata:
+      labels:
+        app: nfs
+    spec:
+      volumes:
+        - name: exports
+          hostPath:
+            path: ${HOME}/home/etc/nfs/exports
+            type: File
+        - name: nfs
+          flexVolume:
+            driver: tkyz/cifs
+            fsType: cifs
+            options:
+              mnt_file: ${HOME}/.secrets/mnt/nas.cifs
+              mnt_path: /nfs/
+              mnt_fmod: "0644"
+              mnt_dmod: "0755"
+      containers:
+        - name: nfs
+          image: docker.repos.tkyz.jp/nfs:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 2049
+          volumeMounts:
+            - name: exports
+              mountPath: /etc/exports
+              readOnly: true
+            - name: nfs
+              mountPath: /mnt/nfs/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs
+spec:
+  type: LoadBalancer
+  selector:
+    app: nfs
+  ports:
+    - port: 2049
+      nodePort: 2049

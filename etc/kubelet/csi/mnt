@@ -1,0 +1,90 @@
+#!/bin/bash -u
+
+out_json='{ "status": "failed" }'
+
+home_yml="${HOME:-/root}/.secrets/home.yml"
+log_file='/var/log/kubelet-csi.log'
+{
+
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')][$$] ${0}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')][$$] ${@}"
+
+  command="${1}"
+  shift
+
+  #----------------------------------------------------------------
+  # init
+  if [[ 'init' == "${command}" ]]; then
+
+    out_json='{ "status": "Success", "capabilities": { "attach": false } }'
+
+  #----------------------------------------------------------------
+  # mount
+  elif [[ 'mount' == "${command}" ]]; then
+
+    mnt_target="${1}"
+    shift
+
+    in_json="${1}"
+    shift
+
+    # マニフェストで指定されたパラメータ
+    arg_name="$(echo "${in_json}" | jq -r .name)"
+    arg_path="$(echo "${in_json}" | jq -r .path)"
+    arg_uid="$( echo "${in_json}" | jq -r '.uid  | select(. != null)')"
+    arg_gid="$( echo "${in_json}" | jq -r '.gid  | select(. != null)')"
+    arg_fmod="$(echo "${in_json}" | jq -r '.fmod | select(. != null)')"
+    arg_dmod="$(echo "${in_json}" | jq -r '.dmod | select(. != null)')"
+
+    # 定義
+    def_yml="$(cat "${home_yml}" | yq -r ".home.mnt[] | select(.name == \"${arg_name}\")")"
+    def_type="$(     echo "${def_yml}" | yq -r .type)"
+    def_host="$(     echo "${def_yml}" | yq -r .host)"
+    def_path="$(     echo "${def_yml}" | yq -r .path)"
+    def_username="$( echo "${def_yml}" | yq -r .username)"
+    def_password="$( echo "${def_yml}" | yq -r .password)"
+    def_opts="$(     echo "${def_yml}" | yq -r .opts)"
+
+    if [[ 'cifs' == "${def_type}" ]]; then
+
+      credentials="$(mktemp)"
+      echo "username=${def_username}" >> "${credentials}"
+      echo "password=${def_password}" >> "${credentials}"
+
+      mnt_source="//$(echo "${def_host}/${def_path}/${arg_path}/" | tr -s "/")"
+      mnt_opts="${def_opts}"
+      mnt_opts+=",credentials=${credentials}"
+      mnt_opts+=",file_mode=${arg_fmod:-0644}"
+      mnt_opts+=",dir_mode=${arg_dmod:-0755}"
+      mnt_opts+=",uid=${arg_uid:-0}"
+      mnt_opts+=",gid=${arg_gid:-0}"
+
+      mount -t "${def_type}" -o "${mnt_opts}" "${mnt_source}" "${mnt_target}"
+      status="${?}"
+
+      if [[ '0' == "${status}" ]]; then
+        out_json='{ "status": "Success" }'
+      fi
+
+    fi
+
+  #----------------------------------------------------------------
+  # unmount
+  elif [[ 'unmount' == "${command}" ]]; then
+
+    mnt_target="${1}"
+    shift
+
+    if mountpoint -q "${mnt_target}"; then
+      umount "${mnt_target}"
+    fi
+
+    out_json='{ "status": "Success" }'
+
+  fi
+
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')][$$] ${out_json}"
+
+} >> "${log_file}" 2>&1
+
+echo "${out_json}"

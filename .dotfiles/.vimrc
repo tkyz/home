@@ -1,0 +1,19 @@
+set encoding=utf-8
+set fileencodings=utf-8,iso-2202-jp,euc-jp,sjis
+set fileformats=unix,dos,mac
+set ignorecase
+set smartcase
+set hlsearch
+set incsearch
+set list
+set listchars=tab:▸\ ,trail:-,eol:↲,extends:»,precedes:«,nbsp:%
+set showmatch
+set number
+set wrap
+set notitle
+set tabstop=4
+set shiftwidth=4
+set nohlsearch
+set cursorline
+set viminfo=
+syntax on

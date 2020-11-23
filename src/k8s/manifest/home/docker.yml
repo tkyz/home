@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docker
+  template:
+    metadata:
+      labels:
+        app: docker
+    spec:
+      volumes:
+        - name: data
+#         hostPath:
+#           path: ${HOME}/home/var/repos/docker/
+#           type: DirectoryOrCreate
+          flexVolume:
+            driver: tkyz/mnt
+            fsType: mnt
+            options:
+              name: repos
+              path: /docker/
+              fmod: "0644"
+              dmod: "0755"
+      containers:
+        - name: registry
+          image: registry:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry/docker/registry/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docker
+spec:
+  selector:
+    app: docker
+  ports:
+    - port: 5000

@@ -1,0 +1,19 @@
+# ホワイトリスト
+*
+!**/
+!/.dotfiles/**
+!/bin/*.py
+!/etc/**
+!/sbin/**
+!/src/**
+!/.gitignore
+!/LICENSE
+!/README.md
+
+# TODO: 下層にホワイトリストの要素を含むと反応する
+/local/
+/mnt/
+/opt/cygwin/
+
+*_
+_*

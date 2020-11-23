@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitcoin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitcoin
+  template:
+    metadata:
+      labels:
+        app: bitcoin
+    spec:
+      volumes:
+        - name: data
+          hostPath:
+            path: ${HOME}/home/var/blockchains/bitcoin/
+            type: DirectoryOrCreate
+      containers:
+        - name: bitcoin
+          image: docker.repos.tkyz.jp/bitcoin:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8333
+          volumeMounts:
+            - name: data
+              mountPath: /root/.bitcoin/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcoin
+spec:
+  type: LoadBalancer
+  selector:
+    app: bitcoin
+  ports:
+    - port: 8333
+      nodePort: 8333

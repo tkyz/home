@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="off">
+
+	<Properties>
+		<Property name="logdir">${sys:user.home}/home/var/log/</Property>
+		<Property name="logname">log.txt</Property>
+		<Property name="charset">UTF-8</Property>
+		<Property name="pattern">[%highlight{%-5level}][%d{yyyy-MM-dd HH:mm:ss.SSS}][%5pid][%-16t]%C.%M(%3L): %msg%n</Property>
+	</Properties>
+
+	<Appenders>
+
+		<Console name="STDOUT" target="SYSTEM_OUT">
+			<PatternLayout pattern="${pattern}" />
+		</Console>
+
+		<Console name="STDERR" target="SYSTEM_ERR">
+			<PatternLayout pattern="${pattern}" />
+		</Console>
+
+		<RollingFile name="FILE" fileName="${logdir}/${logname}" filePattern="${logdir}/%d{yyyy}/%d{MM}/${logname}_%d{yyyyMMdd}_%i.gz">
+			<PatternLayout pattern="${pattern}" charset="$charset" />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+			</Policies>
+			<DefaultRolloverStrategy />
+		</RollingFile>
+
+	</Appenders>
+
+	<Loggers>
+
+		<Root level="warn">
+			<AppenderRef ref="STDERR" />
+			<AppenderRef ref="FILE" />
+		</Root>
+
+		<Logger level="trace" name="jp.tkyz" additivity="false">
+			<AppenderRef ref="STDOUT" />
+			<AppenderRef ref="FILE" />
+		</Logger>
+
+	</Loggers>
+
+</Configuration>

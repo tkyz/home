@@ -1,0 +1,4 @@
+Host *
+  PasswordAuthentication no
+  ForwardAgent yes
+  ServerAliveInterval 300

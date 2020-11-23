@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litecoin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: litecoin
+  template:
+    metadata:
+      labels:
+        app: litecoin
+    spec:
+      volumes:
+        - name: data
+          hostPath:
+            path: ${HOME}/home/var/blockchains/litecoin/
+            type: DirectoryOrCreate
+      containers:
+        - name: litecoin
+          image: docker.repos.tkyz.jp/litecoin:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9333
+          volumeMounts:
+            - name: data
+              mountPath: /root/.litecoin/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litecoin
+spec:
+  type: LoadBalancer
+  selector:
+    app: litecoin
+  ports:
+    - port: 9333
+      nodePort: 9333

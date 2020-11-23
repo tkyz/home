@@ -1,0 +1,1 @@
+Acquire::http::Proxy "http://debian.repos.tkyz.jp:3142/";

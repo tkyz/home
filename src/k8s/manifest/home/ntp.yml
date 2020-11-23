@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ntp
+  template:
+    metadata:
+      labels:
+        app: ntp
+    spec:
+      volumes:
+        # configmap化
+        - name: chrony-conf
+          hostPath:
+            path: ${HOME}/home/src/k8s/configmap/home/ntp/chrony.conf
+            type: File
+      containers:
+        - name: chrony
+          image: docker.repos.tkyz.jp/chrony:latest
+          imagePullPolicy: Never
+          securityContext:
+            capabilities:
+              add:
+                - SYS_TIME
+          ports:
+            - protocol: UDP
+              containerPort: 123
+          volumeMounts:
+            - name: chrony-conf
+              mountPath: /etc/chrony/chrony.conf
+              readOnly: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntp
+spec:
+  type: LoadBalancer
+  selector:
+    app: ntp
+  ports:
+    - protocol: UDP
+      port: 123
+      nodePort: 123

@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monacoin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monacoin
+  template:
+    metadata:
+      labels:
+        app: monacoin
+    spec:
+      volumes:
+        - name: data
+          hostPath:
+            path: ${HOME}/home/var/blockchains/monacoin/
+            type: DirectoryOrCreate
+      containers:
+        - name: monacoin
+          image: docker.repos.tkyz.jp/monacoin:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9401
+          volumeMounts:
+            - name: data
+              mountPath: /root/.monacoin/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monacoin
+spec:
+  type: LoadBalancer
+  selector:
+    app: monacoin
+  ports:
+    - port: 9401
+      nodePort: 9401

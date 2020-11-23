@@ -1,0 +1,78 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+	                    https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+	<localRepository>${user.home}/home/var/cache/org.apache.maven/</localRepository>
+
+	<activeProfiles>
+		<activeProfile>jp.tkyz</activeProfile>
+	</activeProfiles>
+
+	<profiles>
+
+		<!-- jp.tkyz -->
+		<profile>
+			<id>jp.tkyz</id>
+			<repositories>
+				<repository>
+					<id>jp.tkyz.repos.maven.internal</id>
+					<url>https://maven.repos.tkyz.jp/repository/internal/</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>
+				<repository>
+					<id>jp.tkyz.repos.maven.snapshots</id>
+					<url>https://maven.repos.tkyz.jp/repository/snapshots/</url>
+					<releases>
+						<enabled>false</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+			</repositories>
+			<pluginRepositories>
+				<pluginRepository>
+					<id>jp.tkyz.repos.maven.internal</id>
+					<url>https://maven.repos.tkyz.jp/repository/internal/</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</pluginRepository>
+				<pluginRepository>
+					<id>jp.tkyz.repos.maven.snapshots</id>
+					<url>https://maven.repos.tkyz.jp/repository/snapshots/</url>
+					<releases>
+						<enabled>false</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</pluginRepository>
+			</pluginRepositories>
+		</profile>
+
+	</profiles>
+
+	<servers>
+		<server>
+			<id>jp.tkyz.repos.maven.internal</id>
+			<username>deployer</username>
+			<password>mvn --encrypt-password {}</password>
+		</server>
+		<server>
+			<id>jp.tkyz.repos.maven.snapshots</id>
+			<username>deployer</username>
+			<password>mvn --encrypt-password {}</password>
+		</server>
+	</servers>
+
+</settings>

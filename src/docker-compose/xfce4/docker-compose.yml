@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+
+  xfce4:
+    build: ${HOME}/home/src/docker/xfce4/
+    image: docker.repos.tkyz.jp/xfce4:debian
+    container_name: xfce4
+    ports:
+      - '3389:3389'
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+#     - ${HOME}/.config/xfce4/:/root/.config/xfce4/:ro
+#   environment:
+#     - XRDP_PASSWORD=

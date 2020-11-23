@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dns
+  template:
+    metadata:
+      labels:
+        app: dns
+    spec:
+      volumes:
+        # configmap化
+        - name: dnsmasq-conf
+          hostPath:
+            path: ${HOME}/home/src/k8s/configmap/home/dns/dnsmasq.conf
+            type: File
+        # configmap化
+        - name: dnsmasq-resolv-conf
+          hostPath:
+            path: ${HOME}/home/src/k8s/configmap/home/dns/dnsmasq-resolv.conf
+            type: File
+        # secret化
+        - name: dnsmasq-hosts-conf
+          hostPath:
+            path: ${HOME}/.secrets/hosts
+            type: File
+      initContainers:
+        - name: init
+          image: busybox:latest
+          imagePullPolicy: Never
+          volumeMounts:
+            - name: dnsmasq-conf
+              mountPath: /etc/dnsmasq.conf
+            - name: dnsmasq-hosts-conf
+              mountPath: /etc/dnsmasq-hosts.conf
+            - name: dnsmasq-resolv-conf
+              mountPath: /etc/dnsmasq-resolv.conf
+          command: ['sh', '-c']
+          args:
+            - chmod 644 /etc/dnsmasq*.conf
+      containers:
+        - name: dnsmasq
+          image: docker.repos.tkyz.jp/dnsmasq:latest
+          imagePullPolicy: Never
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          ports:
+            - protocol: UDP
+              containerPort: 53
+          volumeMounts:
+            - name: dnsmasq-conf
+              mountPath: /etc/dnsmasq.conf
+              readOnly: true
+            - name: dnsmasq-hosts-conf
+              mountPath: /etc/dnsmasq-hosts.conf
+              readOnly: true
+            - name: dnsmasq-resolv-conf
+              mountPath: /etc/dnsmasq-resolv.conf
+              readOnly: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns
+spec:
+  type: LoadBalancer
+  selector:
+    app: dns
+  ports:
+    - protocol: UDP
+      port: 53
+      nodePort: 53

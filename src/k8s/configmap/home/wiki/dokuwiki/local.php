@@ -1,0 +1,22 @@
+<?php
+$conf['title'] = 'wiki.tkyz.jp';
+$conf['lang'] = 'ja';
+$conf['template'] = 'bootstrap3';
+$conf['license'] = '0';
+$conf['youarehere'] = 1;
+$conf['useacl'] = 1;
+$conf['superuser'] = '@admin';
+$conf['disableactions'] = 'register';
+$conf['auth_security_timeout'] = 3;
+$conf['userewrite'] = '1';
+$conf['useslash'] = 1;
+$conf['fnencode'] = 'utf-8';
+$conf['plugin']['translation']['dropdown'] = 1;
+$conf['tpl']['bootstrap3']['inverseNavbar'] = 1;
+$conf['tpl']['bootstrap3']['showTranslation'] = 1;
+$conf['tpl']['bootstrap3']['showUserHomeLink'] = 0;
+$conf['tpl']['bootstrap3']['showAdminMenu'] = 1;
+$conf['tpl']['bootstrap3']['showBadges'] = 0;
+$conf['tpl']['bootstrap3']['showWikiInfo'] = 0;
+$conf['tpl']['bootstrap3']['showPageIcons'] = 0;
+$conf['tpl']['bootstrap3']['socialShareProviders'] = 'facebook,linkedin,pinterest,whatsapp,reddit,twitter,telegram,yammer,google-plus';

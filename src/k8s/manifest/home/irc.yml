@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: irc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: irc
+  template:
+    metadata:
+      labels:
+        app: irc
+    spec:
+      volumes:
+        - name: ngircd-conf
+          hostPath:
+            path: ${HOME}/home/etc/ngircd/ngircd.conf
+            type: File
+      containers:
+        - name: ngircd
+          image: docker.repos.tkyz.jp/ngircd:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6667
+          volumeMounts:
+            - name: ngircd-conf
+              mountPath: /etc/ngircd/ngircd.conf
+              readOnly: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: irc
+spec:
+  type: LoadBalancer
+  selector:
+    app: irc
+  ports:
+    - port: 6667
+      nodePort: 6667

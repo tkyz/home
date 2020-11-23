@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3306
+          env:
+#           - name: MYSQL_ALLOW_EMPTY_PASSWORD
+#             value: "no"
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: "yes"
+#           - name: MYSQL_ROOT_PASSWORD
+#             value: null
+            - name: MYSQL_USER
+              value: "sandbox"
+            - name: MYSQL_PASSWORD
+              value: "sandbox"
+            - name: MYSQL_DATABASE
+              value: "sandbox"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: sandbox
+spec:
+  type: LoadBalancer
+  selector:
+    app: mariadb
+  ports:
+    - port: 3306
+      nodePort: 3306

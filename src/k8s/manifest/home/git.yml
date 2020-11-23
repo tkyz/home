@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: git
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: git
+  template:
+    metadata:
+      labels:
+        app: git
+    spec:
+      volumes:
+        - name: data
+#         hostPath:
+#           path: ${HOME}/home/var/repos/git/
+#           type: DirectoryOrCreate
+          flexVolume:
+            driver: tkyz/mnt
+            fsType: mnt
+            options:
+              name: repos
+              path: /git/
+              fmod: "0644"
+              dmod: "0755"
+      containers:
+        - name: git-daemon
+          image: docker.repos.tkyz.jp/git-daemon:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9418
+          volumeMounts:
+            - name: data
+              mountPath: /var/git/
+              readOnly: true
+          args:
+            - --export-all
+            - --base-path=/var/git/
+            - /var/git/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: git
+spec:
+  type: LoadBalancer
+  selector:
+    app: git
+  ports:
+    - port: 9418
+      nodePort: 9418

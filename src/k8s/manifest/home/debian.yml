@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debian
+  template:
+    metadata:
+      labels:
+        app: debian
+    spec:
+      volumes:
+        - name: data
+#         hostPath:
+#           path: ${HOME}/home/var/repos/debian/
+#           type: DirectoryOrCreate
+          flexVolume:
+            driver: tkyz/mnt
+            fsType: mnt
+            options:
+              name: repos
+              path: /debian/
+              fmod: "0666"
+              dmod: "0777"
+      containers:
+        - name: apt-cacher-ng
+          image: docker.repos.tkyz.jp/apt-cacher-ng:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3142
+          volumeMounts:
+            - name: data
+              mountPath: /var/cache/apt-cacher-ng/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: debian
+spec:
+  type: LoadBalancer
+  selector:
+    app: debian
+  ports:
+    - port: 3142
+      nodePort: 3142

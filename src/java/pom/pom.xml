@@ -1,0 +1,486 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+	                    http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>jp.tkyz</groupId>
+	<artifactId>pom</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<properties>
+
+		<java.version>11</java.version>
+		<java.encode>UTF-8</java.encode>
+
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+
+		<project.build.sourceEncoding>${java.encode}</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>${java.encode}</project.reporting.outputEncoding>
+
+		<maven.javadoc.skip>true</maven.javadoc.skip>
+		<maven.test.skip>true</maven.test.skip>
+		<assembly.skipAssembly>true</assembly.skipAssembly>
+
+	</properties>
+
+	<distributionManagement>
+
+		<repository>
+			<id>jp.tkyz.repos.maven.internal</id>
+			<url>https://maven.repos.tkyz.jp/repository/internal/</url>
+		</repository>
+
+		<snapshotRepository>
+			<id>jp.tkyz.repos.maven.snapshots</id>
+			<url>https://maven.repos.tkyz.jp/repository/snapshots/</url>
+		</snapshotRepository>
+
+	</distributionManagement>
+
+	<build>
+
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-help-plugin</artifactId>
+					<version>3.2.0</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-checkstyle-plugin</artifactId>
+					<version>3.1.1</version>
+					<configuration>
+						<!-- configLocation>checkstyle.xml</configLocation -->
+						<failOnViolation>false</failOnViolation>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+
+				<!-- ビルド -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.8.1</version>
+					<configuration>
+						<compilerArgument>-Xlint:unchecked</compilerArgument>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.1.0</version>
+					<configuration>
+						<overwrite>true</overwrite>
+					</configuration>
+				</plugin>
+
+				<!-- テスト -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.22.2</version>
+					<configuration>
+						<testFailureIgnore>true</testFailureIgnore>
+					</configuration>
+				</plugin>
+
+				<!-- パッケージング -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.2.0</version>
+					<configuration>
+						<!-- outputDirectory>${user.home}/home/local/lib/</outputDirectory -->
+						<archive>
+							<manifestEntries>
+								<Built-By></Built-By>
+							</manifestEntries>
+							<manifest>
+								<!-- addClasspath>true</addClasspath -->
+								<!-- classpathPrefix>dependency/</classpathPrefix -->
+								<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+								<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+							</manifest>
+						</archive>
+						<skipIfEmpty>true</skipIfEmpty>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.2.1</version>
+					<configuration>
+						<excludeResources>true</excludeResources>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.2.0</version>
+					<configuration>
+						<quiet>true</quiet>
+						<show>protected</show>
+						<locale>ja</locale>
+						<source>${java.version}</source>
+						<outputDirectory>${user.home}/home/local/share/${project.groupId}/${project.artifactId}/</outputDirectory>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>3.1.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-assembly-plugin</artifactId>
+					<version>3.3.0</version>
+					<configuration>
+						<descriptorRefs>
+							<descriptorRef>jar-with-dependencies</descriptorRef>
+						</descriptorRefs>
+					</configuration>
+				</plugin>
+
+				<!-- インストール -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>2.5.2</version>
+				</plugin>
+
+				<!-- IDE -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-eclipse-plugin</artifactId>
+					<version>2.10</version>
+					<configuration>
+						<downloadSources>true</downloadSources>
+						<downloadJavadocs>true</downloadJavadocs>
+					</configuration>
+				</plugin>
+
+				<!-- レポート -->
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>3.9.1</version>
+					<configuration>
+						<locales>ja</locales>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-project-info-reports-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-report-plugin</artifactId>
+					<version>2.22.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-pmd-plugin</artifactId>
+					<version>3.13.0</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jxr-plugin</artifactId>
+					<version>3.0.0</version>
+				</plugin>
+<!--
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jlink-plugin</artifactId>
+					<version>3.0.0-alpha-1</version>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>jlink</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+-->
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-help-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<includeScope>runtime</includeScope>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+			</plugin>
+<!--
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jlink-plugin</artifactId>
+			</plugin>
+-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+			</plugin>
+
+		</plugins>
+	</build>
+
+	<reporting>
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>ci-management</report>
+							<report>dependencies</report>
+							<report>dependency-convergence</report>
+							<report>dependency-info</report>
+							<report>dependency-management</report>
+							<report>distribution-management</report>
+							<report>index</report>
+							<report>issue-management</report>
+							<report>licenses</report>
+							<report>mailing-lists</report>
+							<report>modules</report>
+							<report>plugin-management</report>
+							<report>plugins</report>
+							<report>scm</report>
+							<report>summary</report>
+							<report>team</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>checkstyle</report>
+							<report>checkstyle-aggregate</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<!-- TODO: no-fork化できないか -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>jxr</report>
+							<report>aggregate</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>pmd</report>
+							<report>cpd</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>report-only</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>javadoc-no-fork</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+		</plugins>
+	</reporting>
+
+	<dependencies>
+
+		<!-- 環境 -->
+
+		<!-- dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.12</version>
+			<scope>provided</scope>
+		</dependency -->
+
+		<!-- テスト -->
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13</version>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>

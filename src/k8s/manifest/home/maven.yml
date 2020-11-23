@@ -1,0 +1,69 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maven
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: maven
+  template:
+    metadata:
+      labels:
+        app: maven
+    spec:
+      volumes:
+        # configmap化
+        - name: archiva-xml
+          hostPath:
+            path: ${HOME}/home/src/k8s/configmap/home/maven/archiva.xml
+            type: File
+        - name: data
+#         hostPath:
+#           path: ${HOME}/home/var/repos/maven/data/
+#           type: DirectoryOrCreate
+          flexVolume:
+            driver: tkyz/mnt
+            fsType: mnt
+            options:
+              name: repos
+              path: /maven/data/
+              fmod: "0644"
+              dmod: "0755"
+        - name: repositories
+#         hostPath:
+#           path: ${HOME}/home/var/repos/maven/repositories/
+#           type: DirectoryOrCreate
+          flexVolume:
+            driver: tkyz/mnt
+            fsType: mnt
+            options:
+              name: repos
+              path: /maven/repositories/
+              fmod: "0644"
+              dmod: "0755"
+      containers:
+        - name: apache-archiva
+          image: docker.repos.tkyz.jp/apache-archiva:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: archiva-xml
+              mountPath: /usr/local/apache-archiva/conf/archiva.xml
+            - name: data
+              mountPath: /usr/local/apache-archiva/data/
+            - name: repositories
+              mountPath: /usr/local/apache-archiva/repositories/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: maven
+spec:
+  selector:
+    app: maven
+  ports:
+    - port: 8080

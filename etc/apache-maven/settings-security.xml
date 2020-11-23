@@ -1,0 +1,4 @@
+<settingsSecurity>
+	<master>mvn --encrypt-master-password {}</master>
+	<!-- relocation>${user.home}/.secrets/maven-settings-security.xml</relocation -->
+</settingsSecurity>

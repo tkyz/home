@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minecraft
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      volumes:
+        - name: server-properties
+          hostPath:
+            path: ${HOME}/home/etc/minecraft/server.properties
+            type: File
+        - name: world
+          hostPath:
+            path: ${HOME}/home/var/minecraft/
+            type: DirectoryOrCreate
+      containers:
+        - name: minecraft
+          image: docker.repos.tkyz.jp/minecraft:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 25565
+          volumeMounts:
+            - name: server-properties
+              mountPath: /usr/local/minecraft/server.properties
+              readOnly: true
+#           - name: banned-ips-json
+#             mountPath: /usr/local/minecraft/banned-ips.json
+#             readOnly: true
+#           - name: banned-players-json
+#             mountPath: /usr/local/minecraft/banned-players.json
+#             readOnly: true
+#           - name: ops-json
+#             mountPath: /usr/local/minecraft/ops.json
+#             readOnly: true
+#           - name: whitelist-json
+#             mountPath: /usr/local/minecraft/whitelist.json
+#             readOnly: true
+            - name: world
+              mountPath: /usr/local/minecraft/world/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft
+spec:
+  type: LoadBalancer
+  selector:
+    app: minecraft
+  ports:
+    - port: 25565
+      nodePort: 25565
