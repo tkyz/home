@@ -17,7 +17,6 @@ elif [[ -f docker-compose.yml || -f docker-compose.yaml ]]; then
 elif [[ -f Dockerfile ]]; then
 
   current_name="${PWD##*/}"
-  docker_repo='docker.repos.tkyz.jp'
 
   docker run \
     --interactive \
@@ -25,6 +24,6 @@ elif [[ -f Dockerfile ]]; then
     --rm \
     --name "${current_name}" \
     --hostname "${current_name}" \
-    "${docker_repo}/${current_name}:latest" "$@"
+    "docker.repos.tkyz.jp/${current_name}:latest" "$@"
 
 fi

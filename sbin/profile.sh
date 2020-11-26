@@ -1,31 +1,28 @@
 umask 0022
 
-# TODO: 重複箇所で定義 home_dir
-home_dir="${HOME:-/root}/home"
-secrets_dir="${HOME:-/root}/.secrets"
-home_yml="${secrets_dir}/home.yml"
-
-root_pub="${home_dir}/sbin/pub"
-root_crt="${home_dir}/sbin/ca.crt"
-
-node_key="${secrets_dir}/pki/key"
-node_pub="${secrets_dir}/pki/pub"
-node_csr="${secrets_dir}/pki/csr"
-node_crt="${secrets_dir}/pki/crt"
+#----------------------------------------------------------------
+# 環境変数
 
 export LANG='ja_JP.UTF-8'
 
-if [[ -d "${home_dir}" ]]; then
+export USER="${USER:-root}"
+export HOME="${HOME:-/root}"
 
-  if ! echo "${PATH}" | grep -q "${home_dir}/bin:"       2> /dev/null; then PATH="${home_dir}/bin:${PATH}";       fi
-  if ! echo "${PATH}" | grep -q "${home_dir}/local/bin:" 2> /dev/null; then PATH="${home_dir}/local/bin:${PATH}"; fi
+export HOME_DIR="${HOME}/home"
+export HOME_YML="${HOME}/home.yml"
 
-  # TODO: 既に定義されている場合
-  export CLASSPATH
-  CLASSPATH="${home_dir}/lib/*"
-  CLASSPATH="${home_dir}/local/lib/*:${CLASSPATH}"
-  CLASSPATH="./*:${CLASSPATH}"
-  CLASSPATH=".:${CLASSPATH}"
+if [[ -d "${HOME_DIR}" ]]; then
+
+  if ! echo "${PATH}" | grep -q "${HOME_DIR}/bin:"       2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}";       fi
+  if ! echo "${PATH}" | grep -q "${HOME_DIR}/local/bin:" 2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+
+  if [[ ! -v CLASSPATH ]]; then
+    export CLASSPATH=''
+    CLASSPATH="${HOME_DIR}/lib/*"
+    CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"
+    CLASSPATH="./*:${CLASSPATH}"
+    CLASSPATH=".:${CLASSPATH}"
+  fi
 
 fi
 
@@ -33,14 +30,11 @@ function git_cat() {
 
   local path="${1}"
 
-  # TODO: 重複箇所で定義 home_dir
-  local home_dir="${HOME:-/root}/home"
-
   if [[ -v DOCKER_BUILDING && -f "/workdir${path}" ]]; then
     cat "/workdir${path}"
 
-  elif [[ -f "${home_dir}${path}" ]]; then
-    cat "${home_dir}${path}"
+  elif [[ -f "${HOME_DIR}${path}" ]]; then
+    cat "${HOME_DIR}${path}"
 
   elif ping -c 1 -q source.tkyz.jp > /dev/null 2>&1; then
     curl "https://source.tkyz.jp${path}" 2> /dev/null
@@ -60,6 +54,18 @@ function reload() {
   echo reloaded.
 }
 export -f reload
+
+#----------------------------------------------------------------
+# シェル変数
+
+root_pub="${HOME_DIR}/sbin/root.pub"
+root_crt="${HOME_DIR}/sbin/root.crt"
+
+secrets_dir="${HOME}/.secrets"
+node_key="${secrets_dir}/node.key"
+node_pub="${secrets_dir}/node.pub"
+node_csr="${secrets_dir}/node.csr"
+node_crt="${secrets_dir}/node.crt"
 
 # color
 txtred='\e[0;31m' # Red
@@ -159,6 +165,9 @@ function is_tcp() {
   timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}"
 }
 
+#----------------------------------------------------------------
+# tty
+
 # prompt
 if true; then
 
@@ -204,7 +213,7 @@ fi
 # history
 if [[ -t 0 ]]; then
 
-  touch "${HOME:-/root}/.bash_history"
+  touch "${HOME}/.bash_history"
 
   export HISTSIZE=16777216
   export HISTFILESIZE=16777216

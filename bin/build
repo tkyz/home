@@ -69,8 +69,8 @@ elif [[ -f pom.xml ]]; then
       --interactive \
       --tty \
       --rm \
-      --volume "${home_dir}/sbin/":'/root/home/sbin/':ro \
-      --volume "${home_dir}/var/cache/org.apache.maven/":'/root/home/var/cache/org.apache.maven/' \
+      --volume "${HOME_DIR}/sbin/":'/root/home/sbin/':ro \
+      --volume "${HOME_DIR}/var/cache/org.apache.maven/":'/root/home/var/cache/org.apache.maven/' \
       --volume "${PWD}":"${workdir}" \
       --workdir "${workdir}" \
       docker.repos.tkyz.jp/builder:alpine build
@@ -95,7 +95,7 @@ elif [[ -f package.json ]]; then
       --interactive \
       --tty \
       --rm \
-      --volume "${home_dir}/sbin/":'/root/home/sbin/':ro \
+      --volume "${HOME_DIR}/sbin/":'/root/home/sbin/':ro \
       --volume "${PWD}":"${workdir}" \
       --workdir "${workdir}" \
       docker.repos.tkyz.jp/builder:alpine build

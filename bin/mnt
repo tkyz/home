@@ -4,14 +4,14 @@ reload
 
 if [[ 1 == "${#}" ]]; then
 
-  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${home_yml}")"
+  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${HOME_YML}")"
 
   def_name="$(echo "${mnt_item_yml}" | yq -r .name)"
   def_type="$(echo "${mnt_item_yml}" | yq -r .type)"
   def_host="$(echo "${mnt_item_yml}" | yq -r .host)"
   def_path="$(echo "${mnt_item_yml}" | yq -r .path)"
 
-  mnt_target="${home_dir}/mnt/${def_name}"
+  mnt_target="${HOME_DIR}/mnt/${def_name}"
   if ! mountpoint --quiet "${mnt_target}"; then
 
     mkdir -p "${mnt_target}"
@@ -42,8 +42,7 @@ if [[ 1 == "${#}" ]]; then
 
     elif [[ 'sshfs' == "${def_type}" ]]; then
 
-      user="${USER:-root}"
-      mnt_source="${user}@${def_host}:${def_path}"
+      mnt_source="${USER}@${def_host}:${def_path}"
 
       sshfs "${mnt_source}" "${mnt_target}"
 

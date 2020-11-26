@@ -4,7 +4,7 @@ reload
 
 mnt backup
 
-backup_yml="$(yq -r '.home.backup' "${home_yml}")"
+backup_yml="$(yq -r '.home.backup' "${HOME_YML}")"
 
 password="$(echo "${backup_yml}" | yq -r '.password | select(. != null)')"
 #password="$(node_hash)"
@@ -19,7 +19,7 @@ if false; then
 
   done
 else
-  target_file="${home_dir}/mnt/backup/${USER:-root}@$(hostname -f)/$(timestamp).tgz.aes256"
+  target_file="${HOME_DIR}/mnt/backup/${USER}@$(hostname -f)/$(timestamp).tgz.aes256"
   tar -zc -C "${HOME}" '.secrets' | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${password}" -out "${target_file}"
 fi
 

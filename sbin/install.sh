@@ -2,16 +2,17 @@
 
 reload
 
-#----------------------------------------------------------------
-# .secrets
-
 umask 0077
+
+#----------------------------------------------------------------
+# pki
+
+mkdir -p "${HOME}/.secrets/pki"
 
 # RSAキーペア
 if true; then
 
   if [[ ! -f "${node_key}" ]]; then
-    mkdir -p "${node_key%/*}"
     openssl genrsa -rand /dev/urandom -out "${node_key}" 4096
   fi
   openssl rsa -in "${node_key}" -pubout -out "${node_pub}"                  2> /dev/null
@@ -40,12 +41,16 @@ if false; then
   chmod 644 "${root_pub}" "${root_crt}"
 fi
 
+#----------------------------------------------------------------
+# ssh
+
 mkdir -p "${HOME}/.ssh/"
 
 # ssh-config
 if true; then
 
-  line="Include ${home_dir}/etc/ssh/config"
+  # TODO: wslでシンボリックリンク貼ってるとパーミッションの問題が出る
+  line="Include ${HOME_DIR}/etc/ssh/config"
   file="${HOME}/.ssh/config"
 
   # TODO: function化
@@ -58,17 +63,17 @@ fi
 # authorized_keys
 if true; then
 
-  org_file="${HOME:-/root}/.ssh/authorized_keys"
+  org_file="${HOME}/.ssh/authorized_keys"
   tmp_file="$(mktemp)"
 
   cp "${org_file}" "${tmp_file}"
 
   # secure
-  echo "$(cat "${node_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) node-pub ${USER:-root}@$(hostname -f)" >> "${tmp_file}"
+  echo "$(cat "${node_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) node-pub ${USER}@$(hostname -f)" >> "${tmp_file}"
 
   # insecure
   echo "$(cat "${root_pub}" | ssh-keygen -f /dev/stdin -i -m pkcs8) root-pub" >> "${tmp_file}"
-  curl https://github.com/tkyz.keys | sed 's/$/ tkyz@github.com/g' >> "${tmp_file}" || true
+  curl https://github.com/tkyz.keys | sed 's#$# ssh://github.com/tkyz/#g' >> "${tmp_file}" || true
 
   sort "${tmp_file}" | uniq > "${org_file}"
 
@@ -104,7 +109,7 @@ fi
 if true; then
 
   # repositories
-  origin_bare="${home_dir}/mnt/home.git"
+  origin_bare="${HOME_DIR}/mnt/home.git"
   origin_file="file://${origin_bare}"
 # origin_ssh='ssh://git.repos.tkyz.jp/home.git'
   origin_ssh="ssh://git.repos.tkyz.jp${origin_bare}"
@@ -125,7 +130,7 @@ if true; then
     github_repo="${github_https}"
   fi
 
-  mkdir -p "${home_dir}"
+  mkdir -p "${HOME_DIR}"
 
   # ベアリポジトリ
   if is_root && [[ ! -d "${origin_bare}" ]]; then
@@ -162,7 +167,7 @@ if true; then
   fi
 
   # ワークツリー
-  pushd "${home_dir}"
+  pushd "${HOME_DIR}"
 
     git init
 
@@ -190,20 +195,20 @@ if true; then
 
   # ディレクトリ作成
   mkdir -p \
-    "${home_dir}/bin/" \
-    "${home_dir}/lib/" \
-    "${home_dir}/local/bin/" \
-    "${home_dir}/local/lib/" \
-    "${home_dir}/local/sbin/" \
-    "${home_dir}/local/src/" \
-    "${home_dir}/mnt/" \
-    "${home_dir}/opt/" \
-    "${home_dir}/tmp/" \
-    "${home_dir}/var/cache/" \
-    "${home_dir}/var/log/"
+    "${HOME_DIR}/bin/" \
+    "${HOME_DIR}/lib/" \
+    "${HOME_DIR}/local/bin/" \
+    "${HOME_DIR}/local/lib/" \
+    "${HOME_DIR}/local/sbin/" \
+    "${HOME_DIR}/local/src/" \
+    "${HOME_DIR}/mnt/" \
+    "${HOME_DIR}/opt/" \
+    "${HOME_DIR}/tmp/" \
+    "${HOME_DIR}/var/cache/" \
+    "${HOME_DIR}/var/log/"
 
   # シンボリックリンクの張り直し
-  find "${home_dir}/.dotfiles/" -mindepth 1 -maxdepth 1 | while read item; do
+  find "${HOME_DIR}/.dotfiles/" -mindepth 1 -maxdepth 1 | while read item; do
 
     name="${item##*/}"
 
@@ -215,9 +220,9 @@ if true; then
     fi
 
     if [[ -f "${item}" ]]; then
-      ln -fs  "${home_dir}/.dotfiles/${name}" "${HOME}/${name}"
+      ln -fs  "${HOME_DIR}/.dotfiles/${name}" "${HOME}/${name}"
     elif [[ -d "${item}" ]] && ! is_cygwin; then
-      ln -fsn "${home_dir}/.dotfiles/${name}" "${HOME}/${name}"
+      ln -fsn "${HOME_DIR}/.dotfiles/${name}" "${HOME}/${name}"
     elif [[ -d "${item}" ]] && is_cygwin; then
       cmd /d /s /c mklink /d "$(cygpath -w "${HOME}/${name}")" "$(cygpath -w "${item}")" |& iconv -f cp932 -t utf-8
     fi
@@ -230,19 +235,19 @@ if true; then
     chmod 700 "${HOME}"
 
     # 0077
-    find "${HOME}/.ssh/"  -type d -print0 | xargs --no-run-if-empty -0 chmod 700
-    find "${HOME}/.ssh/"  -type f -print0 | xargs --no-run-if-empty -0 chmod 600
-    find "${secrets_dir}" -type d -print0 | xargs --no-run-if-empty -0 chmod 700
-    find "${secrets_dir}" -type f -print0 | xargs --no-run-if-empty -0 chmod 600
+    find "${HOME}/.ssh/"     -type d -print0 | xargs --no-run-if-empty -0 chmod 700
+    find "${HOME}/.ssh/"     -type f -print0 | xargs --no-run-if-empty -0 chmod 600
+    find "${HOME}/.secrets/" -type d -print0 | xargs --no-run-if-empty -0 chmod 700
+    find "${HOME}/.secrets/" -type f -print0 | xargs --no-run-if-empty -0 chmod 600
 
     # 0022
-#   chmod -R go-w "${home_dir}" || true
+#   chmod -R go-w "${HOME_DIR}" || true
 
   fi
 
   # profile
   if is_sudoer; then
-    sudo ln -fs "${home_dir}/sbin/profile.sh" /etc/profile.d/home.sh
+    sudo ln -fs "${HOME_DIR}/sbin/profile.sh" /etc/profile.d/home.sh
   fi
 
   # 自己証明書をインストール
@@ -411,7 +416,7 @@ if [[ 'runtime' == "${type}" ]]; then
     # python3
     if is_debian; then sudo apt install -y     python3.7 python3-pip; fi
     if is_alpine; then sudo apk --no-cache add python3   py-pip;      fi
-    sudo pip3 install yq
+    sudo pip3 install yq kubernetes
 
     # dotnet core
     # https://docs.microsoft.com/ja-jp/dotnet/core/install/
@@ -441,8 +446,8 @@ if [[ 'runtime' == "${type}" ]]; then
     sudo apt install -y docker-ce docker-ce-cli containerd.io
 
     # シンボリックリンクだとエラーになるのでコピー
-#   sudo ln -fs "${home_dir}/etc/docker/daemon.json" '/etc/docker/daemon.json'
-    sudo cp -f  "${home_dir}/etc/docker/daemon.json" '/etc/docker/daemon.json'
+#   sudo ln -fs "${HOME_DIR}/etc/docker/daemon.json" '/etc/docker/daemon.json'
+    sudo cp -f  "${HOME_DIR}/etc/docker/daemon.json" '/etc/docker/daemon.json'
 
     # data-root (daemon.jsonではなくシンボリックリンクで変更)
     if false; then
@@ -481,7 +486,7 @@ if [[ 'runtime' == "${type}" ]]; then
   fi
 
   # kubelet-plugins
-  find "${home_dir}/etc/kubelet/csi" -maxdepth 1 -mindepth 1 -type f 2> /dev/null | while read file; do
+  find "${HOME_DIR}/etc/kubelet/csi" -maxdepth 1 -mindepth 1 -type f 2> /dev/null | while read file; do
 
     driver_type="${file##*/}"
     output_dir="/usr/libexec/kubernetes/kubelet-plugins/volume/exec/tkyz~${driver_type}"
@@ -564,7 +569,7 @@ if [[ 'develop' == "${type}" ]]; then
     # TODO: openjdk-latest-sdk
     if is_debian; then sudo apt install -y     openjdk-11-jdk ant        maven; fi
     if is_alpine; then sudo apk --no-cache add openjdk11-jdk  apache-ant maven; fi
-    ln -fsn "${home_dir}/etc/apache-maven" "${HOME}/.m2"
+    ln -fsn "${HOME_DIR}/etc/apache-maven" "${HOME}/.m2"
 
     # dotnet core
     # https://docs.microsoft.com/ja-jp/dotnet/core/install/linux-debian
@@ -600,7 +605,7 @@ if [[ 'develop' == "${type}" ]]; then
   fi
 
   # adopt-openjdk-8-jdk
-  output_dir="${home_dir}/opt/adopt-openjdk-8-jdk"
+  output_dir="${HOME_DIR}/opt/adopt-openjdk-8-jdk"
   if [[ ! -d "${output_dir}" ]]; then
 
     mkdir -p "${output_dir}"
@@ -612,11 +617,11 @@ if [[ 'develop' == "${type}" ]]; then
   if is_sudoer; then
     sudo ln -fs "${output_dir}/bin/java" '/usr/local/bin/java8'
   else
-    ln -fs "${output_dir}/bin/java" "${home_dir}/local/bin/java8"
+    ln -fs "${output_dir}/bin/java" "${HOME_DIR}/local/bin/java8"
   fi
 
   # apache-drill
-  output_dir="${home_dir}/opt/apache-drill"
+  output_dir="${HOME_DIR}/opt/apache-drill"
   if [[ ! -d "${output_dir}" ]]; then
 
     mkdir -p "${output_dir}"
@@ -643,7 +648,7 @@ if [[ 'develop' == "${type}" ]]; then
   ln -fs "../../../etc/apache-drill/conf/storage-plugins-override.conf" "${output_dir}/conf/storage-plugins-override.conf"
 
   # embulk
-  output_file="${home_dir}/local/bin/embulk"
+  output_file="${HOME_DIR}/local/bin/embulk"
   if [[ ! -f "${output_file}" ]]; then
 
     curl 'https://dl.embulk.org/embulk-latest.jar' -o "${output_file}"
@@ -687,7 +692,7 @@ if [[ 'develop' == "${type}" ]]; then
   # docker-compose
   if is_cmd docker; then
 
-    output_file="${home_dir}/local/bin/docker-compose"
+    output_file="${HOME_DIR}/local/bin/docker-compose"
     if [[ ! -f "${output_file}" ]]; then
 
       # https://docs.docker.com/compose/install/

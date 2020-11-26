@@ -11,7 +11,7 @@ if is_sudoer; then
 
     # TODO: ProxyAutoDetect
     if is_tcp debian.repos.tkyz.jp 3142; then
-      sudo ln -fs "${home_dir}/etc/apt.conf.d/00proxy" "${output_file}"
+      sudo ln -fs "${HOME_DIR}/etc/apt.conf.d/00proxy" "${output_file}"
     else
       sudo rm -rf "${output_file}"
     fi
@@ -40,7 +40,7 @@ fi
 # home.git
 if is_cmd git; then
 
-  git -C "${home_dir}" pull --all --prune
+  git -C "${HOME_DIR}" pull --all --prune
 
   reload
 

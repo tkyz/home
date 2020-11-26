@@ -4,12 +4,12 @@ reload
 
 if [[ 1 == "${#}" ]]; then
 
-  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${home_yml}")"
+  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${HOME_YML}")"
 
   def_name="$(echo "${mnt_item_yml}" | yq -r .name)"
   def_type="$(echo "${mnt_item_yml}" | yq -r .type)"
 
-  mnt_target="${home_dir}/mnt/${def_name}"
+  mnt_target="${HOME_DIR}/mnt/${def_name}"
   if [[ -d "${mnt_target}" ]] && mountpoint --quiet "${mnt_target}"; then
 
     if [[ 'cifs' == "${def_type}" ]]; then

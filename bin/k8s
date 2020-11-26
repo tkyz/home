@@ -2,7 +2,7 @@
 
 reload
 
-k8s_yml="$(yq -r .home.k8s "${home_yml}")"
+k8s_yml="$(yq -r .home.k8s "${HOME_YML}")"
 len="$(echo "${k8s_yml}" | yq -r length)"
 
 for ((i = 0; i < "${len}"; i++)); do
@@ -19,13 +19,13 @@ for ((i = 0; i < "${len}"; i++)); do
   # TODO: イメージがローカルになければビルド
   # TODO: イメージ名
   if false && [[ 'true' == "${build}" ]]; then
-    pushd "${home_dir}/src/docker/${xxx}/"
+    pushd "${HOME_DIR}/src/docker/${xxx}/"
       build --no-cache --pull
     popd
   fi
 
   # config-map
-# config_map_dir="${home_dir}/k8s/configmap/${ns}/${name}"
+# config_map_dir="${HOME_DIR}/k8s/configmap/${ns}/${name}"
 # if [[ -d "${config_map_dir}" ]]; then
 #   sudo kubectl create configmap -n "${ns}" "${name}" --from-file="${config_map_dir}"
 # fi
@@ -45,8 +45,8 @@ for ((i = 0; i < "${len}"; i++)); do
   elif [[ -n "${url}" ]]; then
     curl "${url}" | sudo kubectl apply -n "${ns}" -f /dev/stdin
 
-  elif [[ -f "${home_dir}/src/k8s/manifest/${ns}/${name}.yml" ]]; then
-    cat "${home_dir}/src/k8s/manifest/${ns}/${name}.yml" | envsubst | sudo kubectl apply -n "${ns}" -f /dev/stdin || true
+  elif [[ -f "${HOME_DIR}/src/k8s/manifest/${ns}/${name}.yml" ]]; then
+    cat "${HOME_DIR}/src/k8s/manifest/${ns}/${name}.yml" | envsubst | sudo kubectl apply -n "${ns}" -f /dev/stdin || true
   fi
 
   certs_key="${secrets_dir}/pki/certs/${domain}/key"
