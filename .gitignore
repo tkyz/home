@@ -1,19 +1,12 @@
-# ホワイトリスト
-*
-!**/
-!/.dotfiles/**
-!/bin/**
-!/etc/**
-!/sbin/**
-!/src/**
-!/.gitignore
-!/LICENSE
-!/README.md
-
-# TODO: 下層にホワイトリストの要素を含むと反応する
+/lib/
 /local/
 /mnt/
-/opt/cygwin/
+/opt/
+/tmp/
+/var/
+
+/.pki/*/
+!/.pki/root/
 
 *_
 _*

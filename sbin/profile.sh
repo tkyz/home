@@ -1,99 +1,60 @@
 umask 0022
 
-#----------------------------------------------------------------
-# 環境変数
-
 export LANG='ja_JP.UTF-8'
+export HOME_DIR="${HOME:-/root}/home"
+export HOME_YML="${HOME:-/root}/home.yml"
+export CLASSPATH
 
-export USER="${USER:-root}"
-export HOME="${HOME:-/root}"
+if ! echo "${PATH}"      | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/bin$"          2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}"; fi
+if ! echo "${PATH}"      | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/bin$"    2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/lib/\*$"       2> /dev/null; then CLASSPATH="${HOME_DIR}/lib/*:${CLASSPATH}"; fi
+if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/lib/\*$" 2> /dev/null; then CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"; fi
+if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^./*$'                      2> /dev/null; then CLASSPATH="./*:${CLASSPATH}"; fi
+if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^.$'                        2> /dev/null; then CLASSPATH=".:${CLASSPATH}"; fi
 
-export HOME_DIR="${HOME}/home"
-export HOME_YML="${HOME}/home.yml"
+# home.env
+if [[ -f "${HOME_YML}" ]]; then
 
-if [[ -d "${HOME_DIR}" ]]; then
+  yml="$(yq -r '.home.env | select(. != null)' "${HOME_YML}")"
 
-  if ! echo "${PATH}" | grep -q "${HOME_DIR}/bin:"       2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}";       fi
-  if ! echo "${PATH}" | grep -q "${HOME_DIR}/local/bin:" 2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+  while read key; do
 
-  if [[ ! -v CLASSPATH ]]; then
-    export CLASSPATH=''
-    CLASSPATH="${HOME_DIR}/lib/*"
-    CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"
-    CLASSPATH="./*:${CLASSPATH}"
-    CLASSPATH=".:${CLASSPATH}"
-  fi
+    vals="$(echo "${yml}" | yq -r ".${key}")"
+
+    while read val; do
+      export "${key}"="$(echo "${val}" | envsubst)"
+    done < <(echo "${vals}" | yq -r 'select(type == "string") | .')
+
+    # TODO: +=
+    while read val; do
+      true
+#     export "${key}"="$(echo "${val}" | envsubst)"
+    done < <(echo "${vals}" | yq -r 'select(type == "array") | .[]')
+
+  done < <(echo "${yml}" | yq -r 'keys[]')
+  unset yml
+  unset key
+  unset val
+  unset vals
 
 fi
 
-function git_cat() {
-
-  local path="${1}"
-
-  if [[ -v DOCKER_BUILDING && -f "/workdir${path}" ]]; then
-    cat "/workdir${path}"
-
-  elif [[ -f "${HOME_DIR}${path}" ]]; then
-    cat "${HOME_DIR}${path}"
-
-  elif ping -c 1 -q source.tkyz.jp > /dev/null 2>&1; then
-    curl "https://source.tkyz.jp${path}" 2> /dev/null
-
-  elif ping -c 1 -q github.jp > /dev/null 2>&1; then
-    curl "https://raw.githubusercontent.com/tkyz/home/master${path}" 2> /dev/null
-
-  else
-    false
-  fi
-
-}
-export -f git_cat
-
-function reload() {
-  source /dev/stdin < <(git_cat /sbin/profile.sh)
-  echo reloaded.
-}
-export -f reload
-
-#----------------------------------------------------------------
-# シェル変数
-
-root_pub="${HOME_DIR}/sbin/root.pub"
-root_crt="${HOME_DIR}/sbin/root.crt"
-
-secrets_dir="${HOME}/.secrets"
-node_key="${secrets_dir}/node.key"
-node_pub="${secrets_dir}/node.pub"
-node_csr="${secrets_dir}/node.csr"
-node_crt="${secrets_dir}/node.crt"
-
 # color
-txtred='\e[0;31m' # Red
-txtgrn='\e[0;32m' # Green
-txtylw='\e[0;33m' # Yellow
-txtblu='\e[0;34m' # Blue
-txtpur='\e[0;35m' # Purple
-txtcyn='\e[0;36m' # Cyan
-txtwht='\e[0;37m' # White
-txtrst='\e[0m'    # Reset
-
-# ID=<distribution>
-source /etc/os-release 2> /dev/null || true
-
-function pushd() {
-  mkdir -p "${1}"
-  command pushd "${1}" > /dev/null
-}
-function popd() {
-  command popd > /dev/null
-}
+txtred='\e[31m' # Red
+txtgrn='\e[32m' # Green
+txtylw='\e[33m' # Yellow
+txtblu='\e[34m' # Blue
+txtpur='\e[35m' # Purple
+txtcyn='\e[36m' # Cyan
+txtwht='\e[37m' # White
+txtrst='\e[0m'  # Reset
 
 # trap
 function trap_err() {
 
   local status="${?}"
 
-  local txtset="\033[91m"
+  local txtset='\e[91m'
 
   printf   "${txtset}%s${txtrst}\n" "error:"
   printf   "${txtset}%s${txtrst}\n" "  timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
@@ -114,25 +75,10 @@ function trap_err() {
 }
 trap trap_err ERR
 
+#----------------------------------------------------------------
 # alias
+
 shopt -s expand_aliases
-
-# sudo
-if [[ 0 == "$(id -u)" || -v DOCKER_BUILDING ]]; then
-  alias sudo=' '
-else
-  alias sudo='sudo '
-fi
-
-alias reboot='sudo shutdown now -r '
-alias relogin='exec "${SHELL}" -l '
-
-alias timestamp='date "+%Y%m%d_%H%M%S" '
-
-alias sstatus=' sudo systemctl status '
-alias sstart='  sudo systemctl start '
-alias sstop='   sudo systemctl stop '
-alias srestart='sudo systemctl restart '
 
 alias ..='cd .. '
 alias ls='ls --color=auto --show-control-chars --time-style=+%Y-%m-%d\ %H:%M:%S '
@@ -142,10 +88,38 @@ alias curl='curl -fL '
 alias vi='vim '
 alias gs='git status '
 
+if [[ 0 == "$(id -u)" ]]; then
+  alias sudo=' '
+else
+  alias sudo='sudo '
+fi
+
+alias sstatus=' sudo systemctl status '
+alias sstart='  sudo systemctl start '
+alias sstop='   sudo systemctl stop '
+alias srestart='sudo systemctl restart '
+
+alias reboot='sudo shutdown now -r '
+alias relogin='exec "${SHELL:-bash}" -l '
+
+alias timestamp='date "+%Y%m%d_%H%M%S" '
+
+#----------------------------------------------------------------
+# function
+
+function pushd() {
+  mkdir -p "${1}"
+  command pushd "${1}" > /dev/null
+}
+function popd() {
+  command popd > /dev/null
+}
+
+#----------------------------------------------------------------
 # if is_xxx; then ...
-alias is_root='    ( diff -q "${root_pub}" "${node_pub}" > /dev/null 2>&1 ) '
+
+alias is_root='    ( test ! -f "${root_pki_dir}/pub" || diff -q "${root_pki_dir}/pub" "${node_pki_dir}/pub" > /dev/null 2>&1 ) '
 alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
-alias is_sudoer='  ( sudo true ) '
 alias is_alpine='  ( grep -q "^ID=alpine$"   /etc/os-release 2> /dev/null ) '
 alias is_debian='  ( grep -q "^ID=debian$"   /etc/os-release 2> /dev/null ) '
 alias is_ubuntu='  ( grep -q "^ID=ubuntu$"   /etc/os-release 2> /dev/null ) '
@@ -157,17 +131,47 @@ alias is_docker='  ( test -v DOCKER_BUILDING || test -f /.dockerenv ) '
 alias is_wsl='     ( test -d /mnt/c/ ) '
 alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
 
-function is_cmd() {
-  type "${1}" > /dev/null 2>&1
-}
+#function is_cmd() {
+#  type "${1}" > /dev/null 2>&1
+#}
 
-function is_tcp() {
-  timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}"
+function is_tcp_conn() {
+  timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}" 2> /dev/null
 }
 
 #----------------------------------------------------------------
-# tty
+# reload
 
+function git_cat() {
+
+  local path="${1}"
+
+  if [[ -v DOCKER_BUILDING && -f "/workdir${path}" ]]; then
+    cat "/workdir${path}"
+
+  elif [[ -f "${HOME_DIR}${path}" ]]; then
+    cat "${HOME_DIR}${path}"
+
+  elif is_tcp_conn raw.home 443; then
+    curl "https://raw.home${path}" 2> /dev/null
+
+  elif is_tcp_conn github.jp 443; then
+    curl "https://raw.githubusercontent.com/tkyz/home/master${path}" 2> /dev/null
+
+  else
+    false
+  fi
+
+}
+export -f git_cat
+
+function reload() {
+  source /dev/stdin < <(git_cat /sbin/profile.sh)
+  echo reloaded.
+}
+export -f reload
+
+#----------------------------------------------------------------
 # prompt
 if true; then
 
@@ -179,7 +183,7 @@ if true; then
   # TODO: IPの範囲で色変えたい
   # ssh接続情報
   if is_ssh; then
-    PS1+="[${txtylw}$(echo "${SSH_CONNECTION}" | awk -F ' ' '{print $1 ":" $2}')${txtrst}->${txtylw}$(echo "${SSH_CONNECTION}" | awk -F ' ' '{print $4 ":" $3}')${txtrst}]"
+    PS1+="[${txtylw}$(echo "${SSH_CONNECTION}" | awk -F ' ' '{print $1 ":" $2}')${txtrst}->${txtylw}$(echo "${SSH_CONNECTION}" | awk -F ' ' '{print $3 ":" $4}')${txtrst}]"
   fi
 
   # 仮想・シミュレート環境
@@ -210,10 +214,11 @@ if true; then
 
 fi
 
+#----------------------------------------------------------------
 # history
 if [[ -t 0 ]]; then
 
-  touch "${HOME}/.bash_history"
+  touch "${HOME:-/root}/.bash_history"
 
   export HISTSIZE=16777216
   export HISTFILESIZE=16777216
