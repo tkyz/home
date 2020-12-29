@@ -1,12 +1,19 @@
 umask 0022
 
-export LANG='ja_JP.UTF-8'
 export HOME_DIR="${HOME:-/root}/home"
 export HOME_YML="${HOME:-/root}/home.yml"
-export CLASSPATH
 
-if ! echo "${PATH}"      | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/bin$"          2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}"; fi
-if ! echo "${PATH}"      | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/bin$"    2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+chmod 600 "${HOME_YML}"
+find "${HOME_DIR}/.pki" -type f                                 | xargs --no-run-if-empty chmod 600
+find "${HOME_DIR}/.pki" -type f -name pub -or -type f -name crt | xargs --no-run-if-empty chmod 644
+find "${HOME_DIR}/.pki" -type d                                 | xargs --no-run-if-empty chmod 755
+
+export LANG='ja_JP.UTF-8'
+
+if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/bin$"       2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}"; fi
+if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/bin$" 2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+
+export CLASSPATH
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/lib/\*$"       2> /dev/null; then CLASSPATH="${HOME_DIR}/lib/*:${CLASSPATH}"; fi
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/lib/\*$" 2> /dev/null; then CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"; fi
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^./*$'                      2> /dev/null; then CLASSPATH="./*:${CLASSPATH}"; fi
@@ -118,7 +125,7 @@ function popd() {
 #----------------------------------------------------------------
 # if is_xxx; then ...
 
-alias is_root='    ( test ! -f "${root_pki_dir}/pub" || diff -q "${root_pki_dir}/pub" "${node_pki_dir}/pub" > /dev/null 2>&1 ) '
+alias is_root='    ( test ! -f "${HOME_DIR}/.pki/root@home/pub" || diff -q "${HOME_DIR}/.pki/root@home/pub" "${HOME_DIR}/.pki/node@home/pub" > /dev/null 2>&1 ) '
 alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
 alias is_alpine='  ( grep -q "^ID=alpine$"   /etc/os-release 2> /dev/null ) '
 alias is_debian='  ( grep -q "^ID=debian$"   /etc/os-release 2> /dev/null ) '

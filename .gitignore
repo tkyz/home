@@ -5,8 +5,12 @@
 /tmp/
 /var/
 
-/.pki/*/
-!/.pki/root/
+/.pki/**/*
+!/.pki/root@home/
+!/.pki/root@home/pub
+!/.pki/root@home/crt
+!/.pki/tkyz@github.com/
+!/.pki/tkyz@github.com/pub
 
 *_
 _*
