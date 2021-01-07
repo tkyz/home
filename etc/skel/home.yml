@@ -41,16 +41,17 @@ home:
   backup:
     target:
       - ${HOME_YML}
-      - ${HOME_DIR}/.pki
+      - ${HOME_DIR}/etc/pki
     password: password
   #----------------------------------------------------------------
   # networking
   dns:
     hosts:
       127.0.0.1:
-        - home
         - example.home
         - node.home
+      127.0.0.1:
+        - home
         - dns.home
         - ntp.home
         - raw.home
