@@ -37,10 +37,10 @@ fi
 
 if [[ 'cifs' == "${type}" ]]; then
 
-  username="$(echo "${yml}" | yq -cr '.username  | select(. != null)')"
-  password="$(echo "${yml}" | yq -cr '.password  | select(. != null)')"
-  opts="$(    echo "${yml}" | yq -cr '.opts      | select(. != null)')"
-  fstab="$(   echo "${yml}" | yq -cr '.fstab     | select(. != null)')"
+  username="$(echo "${yml}" | yq -cr '.username | select(. != null)')"
+  password="$(echo "${yml}" | yq -cr '.password | select(. != null)')"
+  opts="$(    echo "${yml}" | yq -cr '.opts     | select(. != null)')"
+  fstab="$(   echo "${yml}" | yq -cr '.fstab    | select(. != null)')"
 
   mnt_source="//${host}${path}"
   mnt_opts+="$(eval echo "${opts}")"

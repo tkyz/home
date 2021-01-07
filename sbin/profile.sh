@@ -69,7 +69,7 @@ if [[ -f "${HOME_YML}" ]]; then
       export "${name}"="$(echo "${value}" | envsubst)"
     done < <(echo "${item}" | yq -cr '.value | select(type == "array") | .[]')
 
-  done < <(yq -cr '.home.env[] | select(.disable != true)' "${HOME_YML}")
+  done < <(yq -cr '.home.env | select(. != null) | .[] | select(.disable != true)' "${HOME_YML}")
 
   unset item
   unset name
