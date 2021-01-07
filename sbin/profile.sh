@@ -1,12 +1,7 @@
 umask 0022
 
 export HOME_DIR="${HOME:-/root}/home"
-export HOME_YML="${HOME:-/root}/home.yml"
-
-chmod 600 "${HOME_YML}"
-find "${HOME_DIR}/.pki" -type f                                 | xargs --no-run-if-empty chmod 600
-find "${HOME_DIR}/.pki" -type f -name pub -or -type f -name crt | xargs --no-run-if-empty chmod 644
-find "${HOME_DIR}/.pki" -type d                                 | xargs --no-run-if-empty chmod 755
+export HOME_YML="${HOME_DIR}/home.yml"
 
 export LANG='ja_JP.UTF-8'
 
@@ -18,33 +13,6 @@ if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/lib/\*$"      
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/lib/\*$" 2> /dev/null; then CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"; fi
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^./*$'                      2> /dev/null; then CLASSPATH="./*:${CLASSPATH}"; fi
 if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^.$'                        2> /dev/null; then CLASSPATH=".:${CLASSPATH}"; fi
-
-# home.env
-if [[ -f "${HOME_YML}" ]]; then
-
-  yml="$(yq -r '.home.env | select(. != null)' "${HOME_YML}")"
-
-  while read key; do
-
-    vals="$(echo "${yml}" | yq -r ".${key}")"
-
-    while read val; do
-      export "${key}"="$(echo "${val}" | envsubst)"
-    done < <(echo "${vals}" | yq -r 'select(type == "string") | .')
-
-    # TODO: +=
-    while read val; do
-      true
-#     export "${key}"="$(echo "${val}" | envsubst)"
-    done < <(echo "${vals}" | yq -r 'select(type == "array") | .[]')
-
-  done < <(echo "${yml}" | yq -r 'keys[]')
-  unset yml
-  unset key
-  unset val
-  unset vals
-
-fi
 
 # color
 txtred='\e[31m' # Red
@@ -81,6 +49,50 @@ function trap_err() {
 
 }
 trap trap_err ERR
+
+#----------------------------------------------------------------
+# home
+
+# .home.env
+if [[ -f "${HOME_YML}" ]]; then
+
+  while read item; do
+
+    name="$(echo "${item}" | yq -cr '.name')"
+
+    while read value; do
+      export "${name}"="$(echo "${value}" | envsubst)"
+    done < <(echo "${item}" | yq -cr '.value | select(type == "string")')
+
+    # TODO: +=
+    while read value; do
+      export "${name}"="$(echo "${value}" | envsubst)"
+    done < <(echo "${item}" | yq -cr '.value | select(type == "array") | .[]')
+
+  done < <(yq -cr '.home.env[] | select(.disable != true)' "${HOME_YML}")
+
+  unset item
+  unset name
+  unset value
+
+fi
+
+# chmod
+if [[ -d "${HOME:-/root}/.ssh" ]]; then
+  find "${HOME:-/root}/.ssh" -type f | xargs --no-run-if-empty chmod -f 600 || true
+  find "${HOME:-/root}/.ssh" -type d | xargs --no-run-if-empty chmod -f 700 || true
+fi
+if [[ -d "${HOME_DIR}/etc/pki" ]]; then
+  find "${HOME_DIR}/etc/pki" -type f                                 | xargs --no-run-if-empty chmod -f 600 || true
+  find "${HOME_DIR}/etc/pki" -type f -name pub -or -type f -name crt | xargs --no-run-if-empty chmod -f 644 || true
+fi
+if [[ -f "${HOME_YML}" ]]; then
+  chmod -f 600 "${HOME_YML}" || true
+fi
+if [[ -d "${HOME_DIR}" ]]; then
+# find "${HOME_DIR}" -type f | xargs --no-run-if-empty chmod -f 644 || true
+  find "${HOME_DIR}" -type d | xargs --no-run-if-empty chmod -f 755 || true
+fi
 
 #----------------------------------------------------------------
 # alias
@@ -125,25 +137,29 @@ function popd() {
 #----------------------------------------------------------------
 # if is_xxx; then ...
 
-alias is_root='    ( test ! -f "${HOME_DIR}/.pki/root@home/pub" || diff -q "${HOME_DIR}/.pki/root@home/pub" "${HOME_DIR}/.pki/node@home/pub" > /dev/null 2>&1 ) '
-alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
+# ディストリビューション
 alias is_alpine='  ( grep -q "^ID=alpine$"   /etc/os-release 2> /dev/null ) '
 alias is_debian='  ( grep -q "^ID=debian$"   /etc/os-release 2> /dev/null ) '
 alias is_ubuntu='  ( grep -q "^ID=ubuntu$"   /etc/os-release 2> /dev/null ) '
 alias is_raspbian='( grep -q "^ID=raspbian$" /etc/os-release 2> /dev/null ) '
+
+# 仮想環境
 alias is_gcp='     ( grep -q "^google-sudoers:.*$" /etc/group ) '
 alias is_aws='     ( grep -q "^ec2-user:.*$"       /etc/group ) '
 alias is_vagrant=' ( grep -q "^vagrant:.*$"        /etc/group ) '
 alias is_docker='  ( test -v DOCKER_BUILDING || test -f /.dockerenv ) '
 alias is_wsl='     ( test -d /mnt/c/ ) '
-alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
 
-#function is_cmd() {
-#  type "${1}" > /dev/null 2>&1
-#}
+alias is_root='    ( test "0000000000000000000000000000000000000000000000000000000000000000" == "$(sha256sum "${HOME_DIR}/etc/pki/ca@node.home/pub" | cut -b 1-64)" ) '
+alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
+alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
 
 function is_tcp_conn() {
   timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}" 2> /dev/null
+}
+
+function is_exec() {
+  type "${1}" > /dev/null 2>&1 || ( ( is_debian || is_raspbian ) && dpkg -l "${1}" | grep -q "^i.* ${1} .*" )
 }
 
 #----------------------------------------------------------------

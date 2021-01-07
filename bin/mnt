@@ -2,52 +2,83 @@
 
 reload
 
-if [[ 1 == "${#}" ]]; then
+if [[ 0 == "${#}" ]]; then
+  false
+fi
 
-  mnt_item_yml="$(yq -r ".home.mnt[] | select(.name == \"${1}\")" "${HOME_YML}")"
+name="${1}"
+mnt_target="${2:-${HOME_DIR}/mnt/${name}}"
 
-  def_name="$(echo "${mnt_item_yml}" | yq -r .name)"
-  def_type="$(echo "${mnt_item_yml}" | yq -r .type)"
-  def_host="$(echo "${mnt_item_yml}" | yq -r .host)"
-  def_path="$(echo "${mnt_item_yml}" | yq -r .path)"
+# パラメータチェック
+if [[ -z "${name}" ]]; then
+  false
+fi
+if [[ -z "${mnt_target}" ]]; then
+  false
+fi
 
-  mnt_target="${HOME_DIR}/mnt/${def_name}"
-  if ! mountpoint --quiet "${mnt_target}"; then
+# マウント済チェック
+if mountpoint --quiet "${mnt_target}"; then
+  false
+fi
 
-    mkdir -p "${mnt_target}"
+# home.yml
+yml="$(yq -cr ".home.mnt[] | select(.disable != true and .name == \"${name}\")" "${HOME_YML}")"
+if [[ -z "${yml}" ]]; then
+  false
+fi
 
-    if [[ 'cifs' == "${def_type}" ]]; then
+type="$(echo "${yml}" | yq -cr .type)"
+host="$(echo "${yml}" | yq -cr .host)"
+path="$(echo "${yml}" | yq -cr .path)"
+if [[ -z "${type}" || -z "${host}" || -z "${path}" ]]; then
+  false
+fi
 
-      def_username="$(echo "${mnt_item_yml}" | yq -r '.username  | select(. != null)')"
-      def_password="$(echo "${mnt_item_yml}" | yq -r '.password  | select(. != null)')"
-      def_opts="$(    echo "${mnt_item_yml}" | yq -r '.opts      | select(. != null)')"
-      def_fstab="$(   echo "${mnt_item_yml}" | yq -r '.fstab     | select(. != null)')"
+if [[ 'cifs' == "${type}" ]]; then
 
-      credentials="$(mktemp)"
-      echo "username=${def_username}" >> "${credentials}"
-      echo "password=${def_password}" >> "${credentials}"
+  username="$(echo "${yml}" | yq -cr '.username  | select(. != null)')"
+  password="$(echo "${yml}" | yq -cr '.password  | select(. != null)')"
+  opts="$(    echo "${yml}" | yq -cr '.opts      | select(. != null)')"
+  fstab="$(   echo "${yml}" | yq -cr '.fstab     | select(. != null)')"
 
-      mnt_source="//${def_host}${def_path}"
-      mnt_opts="$(eval echo ${def_opts})"
-      mnt_opts+=",credentials=${credentials}"
-      if ! echo "${mnt_opts}" | grep -q file_mode= 2> /dev/null; then mnt_opts+=',file_mode=0644'; fi
-      if ! echo "${mnt_opts}" | grep -q dir_mode=  2> /dev/null; then mnt_opts+=',dir_mode=0755';  fi
-      if ! echo "${mnt_opts}" | grep -q uid=       2> /dev/null; then mnt_opts+=",uid=$(id -u)";   fi
-      if ! echo "${mnt_opts}" | grep -q gid=       2> /dev/null; then mnt_opts+=",gid=$(id -g)";   fi
+  mnt_source="//${host}${path}"
+  mnt_opts+="$(eval echo "${opts}")"
 
-#     if [[ 'true' == "${def_fstab}" ]]; then
-#       echo "${mnt_source} ${mnt_target} ${def_type} ${mnt_opts} 0 0" | sudo tee --append /etc/fstab
-#     fi
-      sudo mount --types "${def_type}" --options "${mnt_opts}" "${mnt_source}" "${mnt_target}"
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^vers=[0-9\.]+$"    2> /dev/null; then mnt_opts+=',vers=3.1.1'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^defaults+$"        2> /dev/null; then mnt_opts+=',defaults'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^iocharset=.+$"     2> /dev/null; then mnt_opts+=',iocharset=utf8'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^nounix=.+$"        2> /dev/null; then mnt_opts+=',nounix'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^file_mode=[0-7]+$" 2> /dev/null; then mnt_opts+=',file_mode=0600'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^dir_mode=[0-7]+$"  2> /dev/null; then mnt_opts+=',dir_mode=0700'; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^uid=.+$"           2> /dev/null; then mnt_opts+=",uid=$(id -u)"; fi
+  if ! echo "${mnt_opts}" | sed 's/,/\n/g' | grep -q -E "^gid=.+$"           2> /dev/null; then mnt_opts+=",gid=$(id -g)"; fi
 
-    elif [[ 'sshfs' == "${def_type}" ]]; then
-
-      mnt_source="${USER}@${def_host}:${def_path}"
-
-      sshfs "${mnt_source}" "${mnt_target}"
-
-    fi
-
+  # TODO: /tmp/が掃除された場合
+  if [[ -n "${username}" || -n "${password}" ]]; then
+    credentials="$(mktemp)"
+    echo "username=${username}" >> "${credentials}"
+    echo "password=${password}" >> "${credentials}"
+    mnt_opts+=",credentials=${credentials}"
   fi
 
+  mnt_opts="$(echo "${mnt_opts}" | sed -r  -e 's/,+/,/g' -e 's/^,//g')"
+
+  mkdir -p "${mnt_target}"
+
+  sudo mount --types "${type}" --options "${mnt_opts}" "${mnt_source}" "${mnt_target}"
+  if [[ 'true' == "${fstab}" ]]; then
+    echo "${mnt_source} ${mnt_target} ${type} ${mnt_opts} 0 0" | sudo tee --append /etc/fstab
+  fi
+
+elif [[ 'sshfs' == "${type}" ]]; then
+
+  mnt_source="${USER}@${host}:${path}"
+
+  mkdir -p "${mnt_target}"
+
+  sshfs "${mnt_source}" "${mnt_target}"
+
+else
+  false
 fi

@@ -1,9 +1,8 @@
 {
+  "data-root": "/home/docker",
   "exec-opts": ["native.cgroupdriver=systemd"],
   "features": {"buildkit": true},
   "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
+  "log-opts": {"max-size": "100m"},
   "storage-driver": "overlay2"
 }

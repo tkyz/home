@@ -1,0 +1,132 @@
+home:
+  # 環境変数
+  env:
+    - name: HOME_DIR
+      value: ${HOME}/home
+      disable: true
+    - name: HOME_YML
+      value: ${HOME_DIR}/home.yml
+      disable: true
+    - name: LANG
+      value: ja_JP.UTF-8
+      disable: true
+    - name: PATH
+      value:
+        - ${HOME_DIR}/local/bin
+        - ${HOME_DIR}/bin
+      disable: true
+    - name: CLASSPATH
+      value:
+        - .
+        - ./*
+        - ${HOME_DIR}/local/lib/*
+        - ${HOME_DIR}/lib/*
+      disable: true
+  # マウント
+  mnt:
+    - name: example
+      type: cifs
+      host: example.home
+      path: /
+      username: username
+      password: password
+      fstab: true
+      disable: true
+    - name: localhost
+      type: sshfs
+      host: localhost
+      path: /
+      disable: true
+  # バックアップ
+  backup:
+    target:
+      - ${HOME_YML}
+      - ${HOME_DIR}/.pki
+    password: password
+  #----------------------------------------------------------------
+  # networking
+  dns:
+    hosts:
+      127.0.0.1:
+        - home
+        - example.home
+        - node.home
+        - dns.home
+        - ntp.home
+        - raw.home
+        - irc.home
+        - api.home
+        - k8s.home
+        # repositories
+        - apt.home
+        - git.home
+        - mvn.home
+        - docker.home
+    resolv:
+      # https://www.internic.net/domain/named.root
+      - name: "*.ROOT-SERVERS.NET"
+        ip:
+          - 198.41.0.4     # A
+          - 199.9.14.201   # B
+          - 192.33.4.12    # C
+          - 199.7.91.13    # D
+          - 192.203.230.10 # E
+          - 192.5.5.241    # F
+          - 192.112.36.4   # G
+          - 198.97.190.53  # H
+          - 192.36.148.17  # I
+          - 192.58.128.30  # J
+          - 193.0.14.129   # K
+          - 199.7.83.42    # L
+          - 202.12.27.33   # M
+      # independent
+      - name: cloudflare
+        ip:
+          - 1.1.1.1
+          - 1.0.0.1
+        disable: true
+      # independent
+      - name: Google Public DNS
+        ip:
+          - 8.8.8.8
+          - 8.8.4.4
+        disable: true
+  ntp:
+    - name: NIST
+      host:
+        - time-nw.nist.gov
+    - name: NASA
+      host:
+        - ntp.nasa.gov
+    - name: NICT
+      host:
+        - ntp.nict.jp
+    - name: 東京大学
+      host:
+        - ntp.nc.u-tokyo.ac.jp
+    - name: 東京理科大学
+      host:
+        - ntp.sut.ac.jp
+    - name: 東北大学
+      host:
+        - ntp1.tohoku.ac.jp
+        - ntp2.tohoku.ac.jp
+        - ntp3.tohoku.ac.jp
+    - name: 大阪府立大学
+      host:
+        - eagle.center.osakafu-u.ac.jp
+    - name: 福岡大学
+      host:
+        - clock.nc.fukuoka-u.ac.jp
+        - clock.tl.fukuoka-u.ac.jp
+    - name: NTP Pool Project
+      host:
+        - 0.pool.ntp.org
+        - 1.pool.ntp.org
+        - 2.pool.ntp.org
+        - 3.pool.ntp.org
+    # independent
+    - name: Google Public NTP
+      host:
+        - time.google.com
+      disable: true
