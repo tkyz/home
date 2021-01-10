@@ -24,7 +24,7 @@ home:
       disable: true
   # マウント
   mnt:
-    - name: example
+    - name: cifs
       type: cifs
       host: example.home
       path: /
@@ -32,9 +32,9 @@ home:
       password: password
       fstab: true
       disable: true
-    - name: localhost
+    - name: sshfs
       type: sshfs
-      host: localhost
+      host: example.home
       path: /
       disable: true
   # バックアップ
