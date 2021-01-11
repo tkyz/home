@@ -49,7 +49,7 @@ home:
     hosts:
       127.0.0.1:
         - example.home
-        - node.home
+        - cur.home
       127.0.0.1:
         - home
         - dns.home

@@ -1,7 +1,5 @@
 #!/bin/bash -eu
 
-reload
-
 if [[ 0 == "${#}" ]]; then
   false
 fi

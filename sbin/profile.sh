@@ -150,7 +150,7 @@ alias is_vagrant=' ( grep -q "^vagrant:.*$"        /etc/group ) '
 alias is_docker='  ( test -v DOCKER_BUILDING || test -f /.dockerenv ) '
 alias is_wsl='     ( test -d /mnt/c/ ) '
 
-alias is_root='    ( test "0000000000000000000000000000000000000000000000000000000000000000" == "$(sha256sum "${HOME_DIR}/etc/pki/ca@node.home/pub" | cut -b 1-64)" ) '
+alias is_root='    ( test "0000000000000000000000000000000000000000000000000000000000000000" == "$(sha256sum "${HOME_DIR}/etc/pki/ca@cur.home/pub" | cut -b 1-64)" ) '
 alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
 alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
 

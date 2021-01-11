@@ -13,43 +13,58 @@ is_exec yq
 
 umask 0077
 
-# 自己署名証明書
-function gen_pki() {
-
-  local cn="${1}"
-
-  local ca_dir="${HOME_DIR}/etc/pki/${cn}"
-  mkdir -p "${ca_dir}"
-
-  local ca_key="${ca_dir}/key"
-  local ca_pub="${ca_dir}/pub"
-  local ca_csr="${ca_dir}/csr"
-  local ca_crt="${ca_dir}/crt"
-
-  if [[ ! -f "${ca_key}" ]]; then
-    openssl genrsa -rand /dev/urandom -out "${ca_key}" 4096
-  fi
-
-  if [[ ! -f "${ca_pub}" || ! -f "${ca_csr}"  || ! -f "${ca_crt}" ]]; then
-
-    openssl rsa -in "${ca_key}" -pubout -out "${ca_pub}"                  2> /dev/null
-#   openssl rsa -in "${ca_key}"         -out "${ca_key}.der" -outform der 2> /dev/null
-#   openssl rsa -in "${ca_key}" -pubout -out "${ca_pub}.der" -outform der 2> /dev/null
-
-    openssl req -new -key "${ca_key}" -out "${ca_csr}" -subj "/CN=${cn}"
-
-    # TODO: 有効期限:10年
-    openssl x509 -days 3650 -req -in "${ca_csr}" -signkey "${ca_key}" -out "${ca_crt}"
-#   openssl ca -policy policy_anything -days 365 -cert "${ca_crt}" -keyfile "${ca_key}" -in "${ca_csr}" -out "${ca_crt}" -extfile "${ca_san}"
-
-  fi
-
-}
+# pki
 if true; then
-  gen_pki 'ca@node.home'
-fi
-if is_root; then
-  gen_pki 'ca@home'
+
+  function gen_pki() {
+
+    local type="${1}"
+    local name="${2}"
+
+    local pki_dir="${HOME_DIR}/etc/pki/${name}"
+    mkdir -p "${pki_dir}"
+
+    local rsa_key="${pki_dir}/key"
+    local rsa_pub="${pki_dir}/pub"
+    local ca_csr="${pki_dir}/csr"
+    local ca_crt="${pki_dir}/crt"
+
+    if [[ 'crt' == "${type}" || 'rsa' == "${type}" ]]; then
+
+      if [[ ! -f "${rsa_key}" ]]; then
+        openssl genrsa -rand /dev/urandom -out "${rsa_key}" 4096
+      fi
+
+      openssl rsa -in "${rsa_key}" -pubout -out "${rsa_pub}"                  2> /dev/null
+#     openssl rsa -in "${rsa_key}"         -out "${rsa_key}.der" -outform der 2> /dev/null
+#     openssl rsa -in "${rsa_key}" -pubout -out "${rsa_pub}.der" -outform der 2> /dev/null
+
+    fi
+
+    if [[ 'crt' == "${type}" ]]; then
+
+      openssl req -new -key "${rsa_key}" -out "${ca_csr}" -subj "/CN=${name}"
+
+      # TODO: 有効期限:10年
+      if [[ ! -f "${ca_crt}" ]]; then
+        openssl x509 -days 3650 -req -in "${ca_csr}" -signkey "${rsa_key}" -out "${ca_crt}"
+#       openssl ca -policy policy_anything -days 365 -cert "${ca_crt}" -keyfile "${rsa_key}" -in "${ca_csr}" -out "${ca_crt}" -extfile "${ca_san}"
+      fi
+
+    fi
+
+  }
+
+  if true; then
+    gen_pki crt 'ca@cur.home'
+  fi
+  if is_root && [[ ! -f "${HOME_DIR}/etc/pki/ca@home/crt" ]]; then
+    gen_pki crt 'ca@home'
+  fi
+  if is_root && [[ ! -f "${HOME_DIR}/etc/pki/tkyz@github.com/pub" ]]; then
+    gen_pki rsa 'tkyz@github.com'
+  fi
+
 fi
 
 # authorized_keys
@@ -197,7 +212,11 @@ popd
 
 # skel
 if [[ ! -f "${HOME_YML}" ]]; then
-  cp "${HOME_DIR}/etc/skel/home.yml" "${HOME_YML}"
+  if is_root; then
+    cp "${HOME_DIR}/etc/skel/home.yml"     "${HOME_YML}"
+  else
+    cp "${HOME_DIR}/etc/skel/cur.home.yml" "${HOME_YML}"
+  fi
 fi
 
 # ディレクトリ作成
@@ -297,14 +316,14 @@ if true; then
   sudo mkdir -p "${crt_dir}"
   sudo chmod 755 "${crt_dir}"
 
-  sudo ln -fs "${HOME_DIR}/etc/pki/ca@home/crt"      "${crt_dir}/ca@home.crt"
-  sudo ln -fs "${HOME_DIR}/etc/pki/ca@node.home/crt" "${crt_dir}/ca@node.home.crt"
+  sudo ln -fs "${HOME_DIR}/etc/pki/ca@home/crt"     "${crt_dir}/ca@home.crt"
+  sudo ln -fs "${HOME_DIR}/etc/pki/ca@cur.home/crt" "${crt_dir}/ca@cur.home.crt"
 
   line='home/ca@home.crt'
   if ! grep -q "${line}" "${conf_file}"; then
     echo "${line}" | sudo tee -a "${conf_file}"
   fi
-  line='home/ca@node.home.crt'
+  line='home/ca@cur.home.crt'
   if ! grep -q "${line}" "${conf_file}"; then
     echo "${line}" | sudo tee -a "${conf_file}"
   fi
@@ -747,7 +766,7 @@ if true; then
 
     if is_debian || is_raspbian; then sudo apt install -y google-cloud-sdk; fi
 
-    # 認証
+    # TODO: 認証
 #   if is_exec gcloud && [[ ! -f "" ]]; then
 #     gcloud auth login
 #   fi

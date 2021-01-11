@@ -1,31 +1,22 @@
 #!/bin/bash -eu
 
-reload
-
 mnt backup
 
-backup_yml="$(yq -r '.home.backup' "${HOME_YML}")"
-
-password="$(echo "${backup_yml}" | yq -r '.password | select(. != null)')"
-#password="$(node_hash)"
-
-# TODO: home.ymlに定義化
-if false; then
-  echo "${backup_yml}" | yq -r '.source[] | .' | while read item; do
-
-    item="$(eval echo "${item}")"
-
-#   tar -zc -C "${HOME}" '.secrets' | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${aes_pass}" -out "${target_file}"
-
-  done
-else
-  target_file="${HOME_DIR}/mnt/backup/${USER}@$(hostname -f)/$(timestamp).tgz.aes256"
-  tar -zc -C "${HOME}" '.secrets' | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${password}" -out "${target_file}"
+yml="$(yq -cr '.home.backup | select(. != null)' "${HOME_YML}")"
+if [[ -z "${yml}" ]]; then
+  false
 fi
+
+target="$(  echo "${yml}" | yq -cr '.target[] | select(. != null)')"
+password="$(echo "${yml}" | yq -cr '.password | select(. != null)')"
+
+tgz_file="${HOME_DIR}/mnt/backup/${USER}@$(hostname -f)/$(timestamp).tgz.aes256"
+
+tar -zc -C "${HOME_DIR}" ${target} | openssl enc -e -aes-256-cbc -salt -md sha512 -pbkdf2 -k "${password}" -out "${tgz_file}"
 
 cat <<EOF
 decrypt.
-> openssl enc -d -aes-256-cbc -salt -md sha512 -pbkdf2 -k '' -in "${target_file}" | tar -zx -C "\$(mktemp -d)"
+> openssl enc -d -aes-256-cbc -salt -md sha512 -pbkdf2 -k '' -in "${tgz_file}" | tar -zx -C "\$(mktemp -d)"
 EOF
 
 umnt backup

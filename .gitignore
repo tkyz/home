@@ -6,12 +6,9 @@
 /var/
 
 /home.yml
-/etc/pki/**/*
-!/etc/pki/ca@home/
-!/etc/pki/ca@home/pub
-!/etc/pki/ca@home/crt
-!/etc/pki/tkyz@github.com/
-!/etc/pki/tkyz@github.com/pub
+/etc/pki/**/key
+/etc/pki/**/csr
+/etc/pki/ca@cur.home/
 
 *_
 _*
