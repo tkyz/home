@@ -6,7 +6,7 @@
 	<localRepository>${user.home}/home/var/cache/org.apache.maven/</localRepository>
 
 	<activeProfiles>
-		<activeProfile>jp.tkyz</activeProfile>
+		<activeProfile>home</activeProfile>
 	</activeProfiles>
 
 	<profiles>
@@ -16,8 +16,8 @@
 			<id>jp.tkyz</id>
 			<repositories>
 				<repository>
-					<id>jp.tkyz.repos.maven.internal</id>
-					<url>https://maven.repos.tkyz.jp/repository/internal/</url>
+					<id>home.mvn.internal</id>
+					<url>https://mvn.home/repository/internal/</url>
 					<releases>
 						<enabled>true</enabled>
 					</releases>
@@ -26,8 +26,8 @@
 					</snapshots>
 				</repository>
 				<repository>
-					<id>jp.tkyz.repos.maven.snapshots</id>
-					<url>https://maven.repos.tkyz.jp/repository/snapshots/</url>
+					<id>home.mvn.snapshots</id>
+					<url>https://mvn.home/repository/snapshots/</url>
 					<releases>
 						<enabled>false</enabled>
 					</releases>
@@ -38,8 +38,8 @@
 			</repositories>
 			<pluginRepositories>
 				<pluginRepository>
-					<id>jp.tkyz.repos.maven.internal</id>
-					<url>https://maven.repos.tkyz.jp/repository/internal/</url>
+					<id>home.mvn.internal</id>
+					<url>https://mvn.home/repository/internal/</url>
 					<releases>
 						<enabled>true</enabled>
 					</releases>
@@ -48,8 +48,8 @@
 					</snapshots>
 				</pluginRepository>
 				<pluginRepository>
-					<id>jp.tkyz.repos.maven.snapshots</id>
-					<url>https://maven.repos.tkyz.jp/repository/snapshots/</url>
+					<id>home.mvn.snapshots</id>
+					<url>https://mvn.home/repository/snapshots/</url>
 					<releases>
 						<enabled>false</enabled>
 					</releases>
@@ -64,12 +64,12 @@
 
 	<servers>
 		<server>
-			<id>jp.tkyz.repos.maven.internal</id>
+			<id>home.mvn.internal</id>
 			<username>deployer</username>
 			<password>mvn --encrypt-password {}</password>
 		</server>
 		<server>
-			<id>jp.tkyz.repos.maven.snapshots</id>
+			<id>home.mvn.snapshots</id>
 			<username>deployer</username>
 			<password>mvn --encrypt-password {}</password>
 		</server>
