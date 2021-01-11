@@ -90,8 +90,7 @@ if [[ -f "${HOME_YML}" ]]; then
   chmod -f 600 "${HOME_YML}" || true
 fi
 if [[ -d "${HOME_DIR}" ]]; then
-# find "${HOME_DIR}" -type f | xargs --no-run-if-empty chmod -f 644 || true
-  find "${HOME_DIR}" -type d | xargs --no-run-if-empty chmod -f 755 || true
+  chmod -R go-w "${HOME_DIR}"
 fi
 
 #----------------------------------------------------------------
