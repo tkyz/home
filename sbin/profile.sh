@@ -90,7 +90,7 @@ if [[ -f "${HOME_YML}" ]]; then
   chmod -f 600 "${HOME_YML}" || true
 fi
 if [[ -d "${HOME_DIR}" ]]; then
-  chmod -R go-w "${HOME_DIR}"
+  chmod -fR go-w "${HOME_DIR}" || true
 fi
 
 #----------------------------------------------------------------
