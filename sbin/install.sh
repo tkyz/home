@@ -766,10 +766,19 @@ if true; then
 
     if is_debian || is_raspbian; then sudo apt install -y google-cloud-sdk; fi
 
-    # TODO: 認証
-#   if is_exec gcloud && [[ ! -f "" ]]; then
-#     gcloud auth login
-#   fi
+    if is_exec gcloud && [[ ! -d "${HOME}/.config/gcloud/" ]]; then
+
+      gcloud auth login
+      gcloud auth application-default login
+
+      # TODO: 認証
+#     gcloud config set project        xxx
+#     gcloud config set compute/region xxx
+#     gcloud config set compute/zone   xxx
+#
+#     gcloud container clusters get-credentials xxx --project xxx --zone xxx
+
+    fi
 
   fi
 
