@@ -1,19 +1,5 @@
 umask 0022
 
-export HOME_DIR="${HOME:-/root}/home"
-export HOME_YML="${HOME_DIR}/home.yml"
-
-export LANG='ja_JP.UTF-8'
-
-if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/bin$"       2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}"; fi
-if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/bin$" 2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
-
-export CLASSPATH
-if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/lib/\*$"       2> /dev/null; then CLASSPATH="${HOME_DIR}/lib/*:${CLASSPATH}"; fi
-if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/lib/\*$" 2> /dev/null; then CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"; fi
-if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^./*$'                      2> /dev/null; then CLASSPATH="./*:${CLASSPATH}"; fi
-if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^.$'                        2> /dev/null; then CLASSPATH=".:${CLASSPATH}"; fi
-
 # color
 txtred='\e[31m' # Red
 txtgrn='\e[32m' # Green
@@ -50,12 +36,26 @@ function trap_err() {
 }
 trap trap_err ERR
 
-#----------------------------------------------------------------
-# home
+# 環境変数
+if true; then
 
-# .home.env
-if [[ -f "${HOME_YML}" ]]; then
+  export HOME_DIR="${HOME:-/root}/home"
+  export HOME_YML="${HOME_DIR}/home.yml"
 
+  export LANG='ja_JP.UTF-8'
+
+  if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/bin$"       2> /dev/null; then PATH="${HOME_DIR}/bin:${PATH}"; fi
+  if ! echo "${PATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/bin$" 2> /dev/null; then PATH="${HOME_DIR}/local/bin:${PATH}"; fi
+
+  export CLASSPATH
+  if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/lib/\*$"       2> /dev/null; then CLASSPATH="${HOME_DIR}/lib/*:${CLASSPATH}"; fi
+  if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q "^${HOME_DIR}/local/lib/\*$" 2> /dev/null; then CLASSPATH="${HOME_DIR}/local/lib/*:${CLASSPATH}"; fi
+  if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^./*$'                      2> /dev/null; then CLASSPATH="./*:${CLASSPATH}"; fi
+  if ! echo "${CLASSPATH}" | sed 's/:/\n/g' | grep -q '^.$'                        2> /dev/null; then CLASSPATH=".:${CLASSPATH}"; fi
+
+elif [[ -f "${HOME_YML}" ]]; then
+
+  # .home.env
   while read item; do
 
     name="$(echo "${item}" | yq -cr '.name')"
@@ -69,7 +69,7 @@ if [[ -f "${HOME_YML}" ]]; then
       export "${name}"="$(echo "${value}" | envsubst)"
     done < <(echo "${item}" | yq -cr '.value | select(type == "array") | .[]')
 
-  done < <(yq -cr '.home.env | select(. != null) | .[] | select(.disable != true)' "${HOME_YML}")
+  done < <(yq -cr '.home.env | select(. != null) | .[]' "${HOME_YML}")
 
   unset item
   unset name
@@ -77,92 +77,67 @@ if [[ -f "${HOME_YML}" ]]; then
 
 fi
 
-# chmod
-if [[ -d "${HOME:-/root}/.ssh" ]]; then
-  find "${HOME:-/root}/.ssh" -type f | xargs --no-run-if-empty chmod -f 600 || true
-  find "${HOME:-/root}/.ssh" -type d | xargs --no-run-if-empty chmod -f 700 || true
-fi
-if [[ -d "${HOME_DIR}/etc/pki" ]]; then
-  find "${HOME_DIR}/etc/pki" -type f                                 | xargs --no-run-if-empty chmod -f 600 || true
-  find "${HOME_DIR}/etc/pki" -type f -name pub -or -type f -name crt | xargs --no-run-if-empty chmod -f 644 || true
-fi
-if [[ -f "${HOME_YML}" ]]; then
-  chmod -f 600 "${HOME_YML}" || true
-fi
-if [[ -d "${HOME_DIR}" ]]; then
-  chmod -fR go-w "${HOME_DIR}" || true
-fi
+# umask
+if true; then
 
-#----------------------------------------------------------------
-# alias
+  if [[ -d "${HOME:-/root}/.ssh" ]]; then
+    find "${HOME:-/root}/.ssh" -type f | xargs --no-run-if-empty chmod -f 600 || true
+    find "${HOME:-/root}/.ssh" -type d | xargs --no-run-if-empty chmod -f 700 || true
+  fi
+  if [[ -d "${HOME_DIR}/etc/pki" ]]; then
+    find "${HOME_DIR}/etc/pki" -type f                                 | xargs --no-run-if-empty chmod -f 600 || true
+    find "${HOME_DIR}/etc/pki" -type f -name pub -or -type f -name crt | xargs --no-run-if-empty chmod -f 644 || true
+  fi
+  if [[ -f "${HOME_YML}" ]]; then
+    chmod -f 600 "${HOME_YML}" || true
+  fi
+
+# if [[ -d "${HOME_DIR}" ]]; then
+#   chmod -fR go-w "${HOME_DIR}" || true
+# fi
+
+fi
 
 shopt -s expand_aliases
 
-alias ..='cd .. '
-alias ls='ls --color=auto --show-control-chars --time-style=+%Y-%m-%d\ %H:%M:%S '
-alias la='ls -a '
-alias ll='la -lFh '
-alias curl='curl -fL '
-alias vi='vim '
-alias gs='git status '
+# if is_xxx; then ...
+if true; then
 
-if [[ 0 == "$(id -u)" ]]; then
-  alias sudo=' '
-else
-  alias sudo='sudo '
+  # ディストリビューション
+  alias is_alpine='  ( grep -q "^ID=alpine$"   /etc/os-release 2> /dev/null ) '
+  alias is_debian='  ( grep -q "^ID=debian$"   /etc/os-release 2> /dev/null ) '
+  alias is_ubuntu='  ( grep -q "^ID=ubuntu$"   /etc/os-release 2> /dev/null ) '
+  alias is_raspbian='( grep -q "^ID=raspbian$" /etc/os-release 2> /dev/null ) '
+
+  # 仮想環境
+  alias is_gcp='     ( grep -q "^google-sudoers:.*$" /etc/group ) '
+  alias is_aws='     ( grep -q "^ec2-user:.*$"       /etc/group ) '
+  alias is_vagrant=' ( grep -q "^vagrant:.*$"        /etc/group ) '
+  alias is_docker='  ( test -v DOCKER_BUILDING || test -f /.dockerenv ) '
+  alias is_wsl='     ( test -d /mnt/c/ ) '
+  alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
+
+# alias is_root='    ( test "0000000000000000000000000000000000000000000000000000000000000000" == "$(git_cat /etc/pki/ca@cur.home/pub | sha256sum | cut -b 1-64)" ) '
+  alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
+
+  function is_tcp_conn() {
+    timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}" 2> /dev/null
+  }
+
+  function is_exec() {
+    type "${1}" > /dev/null 2>&1 || ( ( is_debian || is_raspbian ) && dpkg -l "${1}" | grep -q "^i.* ${1} .*" )
+  }
+
 fi
-
-alias sstatus=' sudo systemctl status '
-alias sstart='  sudo systemctl start '
-alias sstop='   sudo systemctl stop '
-alias srestart='sudo systemctl restart '
-
-alias reboot='sudo shutdown now -r '
-alias relogin='exec "${SHELL:-bash}" -l '
-
-alias timestamp='date "+%Y%m%d_%H%M%S" '
-
-#----------------------------------------------------------------
-# function
 
 function pushd() {
   mkdir -p "${1}"
   command pushd "${1}" > /dev/null
 }
+
 function popd() {
   command popd > /dev/null
 }
-
-#----------------------------------------------------------------
-# if is_xxx; then ...
-
-# ディストリビューション
-alias is_alpine='  ( grep -q "^ID=alpine$"   /etc/os-release 2> /dev/null ) '
-alias is_debian='  ( grep -q "^ID=debian$"   /etc/os-release 2> /dev/null ) '
-alias is_ubuntu='  ( grep -q "^ID=ubuntu$"   /etc/os-release 2> /dev/null ) '
-alias is_raspbian='( grep -q "^ID=raspbian$" /etc/os-release 2> /dev/null ) '
-
-# 仮想環境
-alias is_gcp='     ( grep -q "^google-sudoers:.*$" /etc/group ) '
-alias is_aws='     ( grep -q "^ec2-user:.*$"       /etc/group ) '
-alias is_vagrant=' ( grep -q "^vagrant:.*$"        /etc/group ) '
-alias is_docker='  ( test -v DOCKER_BUILDING || test -f /.dockerenv ) '
-alias is_wsl='     ( test -d /mnt/c/ ) '
-
-alias is_root='    ( test "0000000000000000000000000000000000000000000000000000000000000000" == "$(sha256sum "${HOME_DIR}/etc/pki/ca@cur.home/pub" | cut -b 1-64)" ) '
-alias is_ssh='     ( test -v SSH_CLIENT || test -v SSH_CONNECTION ) '
-alias is_cygwin='  ( test -d /cygdrive/ || test "cygwin" == "${OSTYPE:-}" ) '
-
-function is_tcp_conn() {
-  timeout 1 bash -c "cat /dev/null > /dev/tcp/${1}/${2}" 2> /dev/null
-}
-
-function is_exec() {
-  type "${1}" > /dev/null 2>&1 || ( ( is_debian || is_raspbian ) && dpkg -l "${1}" | grep -q "^i.* ${1} .*" )
-}
-
-#----------------------------------------------------------------
-# reload
 
 function git_cat() {
 
@@ -189,9 +164,38 @@ export -f git_cat
 
 function reload() {
   source /dev/stdin < <(git_cat /sbin/profile.sh)
-  echo reloaded.
+# echo reloaded.
 }
 export -f reload
+
+# alias
+if true; then
+
+  alias ..='cd .. '
+  alias ls='ls --color=auto --show-control-chars --time-style=+%Y-%m-%d\ %H:%M:%S '
+  alias la='ls -a '
+  alias ll='la -lFh '
+  alias curl='curl -fL '
+  alias vi='vim '
+  alias gs='git status '
+
+  if [[ 0 == "$(id -u)" ]]; then
+    alias sudo=' '
+  else
+    alias sudo='sudo '
+  fi
+
+  alias sstatus=' sudo systemctl status '
+  alias sstart='  sudo systemctl start '
+  alias sstop='   sudo systemctl stop '
+  alias srestart='sudo systemctl restart '
+
+  alias reboot='sudo shutdown now -r '
+  alias relogin='exec "${SHELL:-bash}" -l '
+
+  alias timestamp='date "+%Y%m%d_%H%M%S" '
+
+fi
 
 #----------------------------------------------------------------
 # prompt

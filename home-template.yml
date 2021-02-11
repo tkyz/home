@@ -3,45 +3,38 @@ home:
   env:
     - name: HOME_DIR
       value: ${HOME}/home
-      disable: true
     - name: HOME_YML
       value: ${HOME_DIR}/home.yml
-      disable: true
     - name: LANG
       value: ja_JP.UTF-8
-      disable: true
     - name: PATH
       value:
         - ${HOME_DIR}/local/bin
         - ${HOME_DIR}/bin
-      disable: true
     - name: CLASSPATH
       value:
         - .
         - ./*
         - ${HOME_DIR}/local/lib/*
         - ${HOME_DIR}/lib/*
-      disable: true
   # マウント
   mnt:
     - name: cifs
       type: cifs
-      host: example.home
+      host: localhost
       path: /
       username: username
       password: password
       fstab: true
-      disable: true
     - name: sshfs
       type: sshfs
-      host: example.home
+      host: localhost
       path: /
-      disable: true
   # バックアップ
   backup:
     target:
-      - ${HOME_YML}
-      - ${HOME_DIR}/etc/pki
+      - home.yml
+      - etc/pki
     password: password
   #----------------------------------------------------------------
   # networking
@@ -50,13 +43,13 @@ home:
       127.0.0.1:
         - example.home
         - cur.home
-      127.0.0.1:
+      127.0.0.2:
         - home
         - dns.home
         - ntp.home
         - raw.home
-        - irc.home
         - api.home
+        - irc.home
         - k8s.home
         # repositories
         - apt.home
@@ -80,18 +73,14 @@ home:
           - 193.0.14.129   # K
           - 199.7.83.42    # L
           - 202.12.27.33   # M
-      # independent
-      - name: cloudflare
-        ip:
-          - 1.1.1.1
-          - 1.0.0.1
-        disable: true
-      # independent
-      - name: Google Public DNS
-        ip:
-          - 8.8.8.8
-          - 8.8.4.4
-        disable: true
+#     - name: cloudflare
+#       ip:
+#         - 1.1.1.1
+#         - 1.0.0.1
+#     - name: Google Public DNS
+#       ip:
+#         - 8.8.8.8
+#         - 8.8.4.4
   ntp:
     - name: NIST
       host:
@@ -126,8 +115,14 @@ home:
         - 1.pool.ntp.org
         - 2.pool.ntp.org
         - 3.pool.ntp.org
-    # independent
-    - name: Google Public NTP
-      host:
-        - time.google.com
-      disable: true
+#   - name: Google Public NTP
+#     host:
+#       - time.google.com
+  k8s:
+    - name: dns
+      build: dnsmasq
+    - name: ntp
+      build: chrony
+    # https://github.com/kubernetes/ingress-nginx/tags
+    - name: ingress-nginx
+      url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/ingress-nginx-3.15.2/deploy/static/provider/baremetal/deploy.yaml
